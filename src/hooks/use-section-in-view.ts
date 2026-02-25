@@ -15,13 +15,9 @@ export const useSectionInView = (
   const { setActiveSection, timeOfLastClick } = useActiveSection()
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (inView && Date.now() - timeOfLastClick > 1000) {
-        setActiveSection(sectionName)
-      }
+    if (inView && Date.now() - timeOfLastClick > 1000) {
+      setActiveSection(sectionName)
     }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
   }, [inView, sectionName, setActiveSection, timeOfLastClick])
 
   return {

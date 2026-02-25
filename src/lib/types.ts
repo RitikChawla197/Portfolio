@@ -3,9 +3,14 @@ import { navLinks } from '@/lib/data'
 export type SectionName = (typeof navLinks)[number]['name']
 
 export type Project = {
-  video: string
+  slug: string
+  video?: string
+  image?: string
   title: string
   description: string
+  role: string
+  duration: string
+  highlights: string[]
   technologies: string[]
   links: {
     preview: string
@@ -17,6 +22,7 @@ export type Project = {
 export type Experience = {
   title: string
   company: string
+  logo?: string
   description: string
   period: string
   technologies: string[]
@@ -32,5 +38,6 @@ export type NavLink = {
 export type Skill = {
   name: string
   icon: React.ReactNode
+  colorClass?: string
 }
 

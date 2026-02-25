@@ -1,5 +1,3 @@
-import { env } from '@/env.mjs'
-
 export const siteConfig = {
   name: 'Ritik Chawla',
   title: 'Ritik Chawla | Software developer',
@@ -26,7 +24,7 @@ export const siteConfig = {
     'Programming',
     'Tech enthusiast',
   ],
-  url: '#',
+  url: 'http://localhost:3000',
   contact: {
     email: 'ritikchawla197@gmail.com',
     linkedin: '#',

@@ -1,13 +1,9 @@
-import { Bricolage_Grotesque, Darker_Grotesque } from 'next/font/google'
+import { Space_Grotesk } from 'next/font/google'
 
-const fontSans = Bricolage_Grotesque({
+const fontSans = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-space-grotesk',
+  display: 'swap',
 })
 
-const fontHeading = Darker_Grotesque({
-  subsets: ['latin'],
-  variable: '--font-heading',
-})
-
-export const fonts = [fontSans.variable, fontHeading.variable]
+export const fonts = [fontSans.variable]

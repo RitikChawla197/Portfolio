@@ -57,60 +57,92 @@ export default function HeroSection() {
         </Link>
       </motion.div>
       <motion.h1
-        initial={{ opacity: 0, y: 100 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
         className="font-heading max-w-3xl text-4xl font-extrabold md:text-5xl"
       >
         I'm a{' '}
-        <span className="bg-gradient-to-r from-rose-700 to-pink-600 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
           Creative Software
         </span>{' '}
         developer crafting seamless, innovative digital experiences.
       </motion.h1>
       <motion.p
-        initial={{ opacity: 0, y: 100 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
-          delay: 0.1,
+          delay: 0.08,
+          duration: 0.4,
+          ease: 'easeOut',
         }}
         className="text-muted-foreground max-w-xl"
       >
         You have a project in mind? Let's talk about it!
       </motion.p>
       <motion.div
-        initial={{ opacity: 0, y: 100 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
-          delay: 0.1,
+          delay: 0.12,
+          duration: 0.4,
+          ease: 'easeOut',
         }}
         className="flex flex-row gap-2 items-center"
       >
-        <Button asChild size="lg">
+        <Button
+          asChild
+          size="lg"
+          className="group transition-transform duration-200 hover:scale-105"
+        >
           <Link href={siteConfig.links.contactForm}>
-            Get in touch <Icons.arrowRight className="ml-2 size-4" />
+            Get in touch{' '}
+            <Icons.arrowRight className="ml-2 size-4 transition-transform duration-200 group-hover:translate-x-1.5" />
           </Link>
         </Button>
-        <Button variant="outline" size="lg" className="hidden sm:flex" asChild>
+        <Button
+          variant="outline"
+          size="lg"
+          className="group hidden sm:flex transition-all duration-200 hover:scale-105 hover:shadow-md"
+          asChild
+        >
           <a href={siteConfig.links.cvPdf} download>
-            Download CV <Icons.download className="ml-2 size-4" />
+            Download Resume{' '}
+            <Icons.download className="size-4 transition-transform duration-200 group-hover:translate-x-1.5" />
           </a>
         </Button>
-        <Button variant="outline" size="icon" asChild>
+        <Button
+          variant="outline"
+          className="group w-9 overflow-hidden px-0 transition-all duration-200 hover:w-28 hover:px-3 hover:scale-105"
+          asChild
+        >
           <Link
             href={siteConfig.links.linkedin}
             aria-label="Linkedin"
             target="_blank"
+            className="flex items-center justify-center gap-0 transition-all duration-400 group-hover:gap-2"
           >
-            <Icons.linkedin className="size-5" />
+            <Icons.linkedin className="size-5 shrink-0 transition-transform duration-200 translate-x-1 group-hover:-translate-x-0.5" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-20 group-hover:opacity-100">
+              LinkedIn
+            </span>
           </Link>
         </Button>
-        <Button variant="outline" size="icon" asChild>
+        <Button
+          variant="outline"
+          className="group w-9 overflow-hidden px-0 transition-all duration-400 hover:w-26 hover:px-3 hover:scale-105"
+          asChild
+        >
           <Link
             href={siteConfig.links.github}
             aria-label="Github"
             target="_blank"
+            className="flex items-center justify-center gap-0 transition-all duration-400 group-hover:gap-2"
           >
-            <Icons.github className="size-5" />
+            <Icons.github className="size-5 shrink-0 transition-transform duration-200 translate-x-1 group-hover:-translate-x-0.5" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-16 group-hover:opacity-100">
+              GitHub
+            </span>
           </Link>
         </Button>
       </motion.div>

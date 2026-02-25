@@ -4,6 +4,7 @@ import { useSectionInView } from '@/hooks/use-section-in-view'
 import { experiencesData } from '@/lib/data'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { Icons } from './icons'
 import SectionHeading from './section-heading'
 import { Badge } from './ui/badge'
@@ -42,7 +43,17 @@ export default function ExperienceSection() {
             >
               <div className="flex items-center gap-3">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full border">
-                  <Icons.building className="size-5" />
+                  {data.logo ? (
+                    <Image
+                      src={data.logo}
+                      alt={`${data.company} logo`}
+                      width={36}
+                      height={36}
+                      className="size-7 rounded-full object-contain"
+                    />
+                  ) : (
+                    <Icons.building className="size-5" />
+                  )}
                 </div>
                 <span className="text-lg font-semibold">{data.company}</span>
               </div>

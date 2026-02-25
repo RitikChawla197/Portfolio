@@ -25,7 +25,7 @@ export default function ContactSection() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ContactFormSchema>({ resolver: zodResolver(contactFormSchema) })
 
   const onSubmit = async (values: ContactFormSchema) => {
@@ -77,7 +77,15 @@ export default function ContactSection() {
           />
           <ErrorLine message={errors.message?.message} />
         </div>
-        <Button type={'submit'} size="lg">
+        <input
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="hidden"
+          {...register('website')}
+        />
+        <Button type={'submit'} size="lg" disabled={isSubmitting}>
           Submit <Icons.arrowRight className="ml-2 size-4" />
         </Button>
       </form>

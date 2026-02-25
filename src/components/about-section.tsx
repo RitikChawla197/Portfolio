@@ -22,14 +22,14 @@ export default function AboutSection() {
       <SectionHeading heading="About Me" />
       <div className="-mt-5 max-w-2xl text-center leading-7">
         <p className="mb-4">
-          I’ve been working with programming for over 3 years. My favorite part
-          of coding is solving problems — I love the feeling of finally figuring
-          out a tricky challenge.
+          I have been working with programming for over 3 years. My favorite
+          part of coding is solving problems, and I love the feeling of finally
+          figuring out a tricky challenge.
         </p>
         <p>
-          I'm open to Job opportunities where I can contribute, learn and grow.
-          If you have a good opportunity that matches my skills and experience
-          then don't hesitate to{' '}
+          I am open to job opportunities where I can contribute, learn, and
+          grow. If you have a good opportunity that matches my skills and
+          experience, then do not hesitate to{' '}
           <Link
             className="underline-offset-4 hover:underline"
             href={siteConfig.links.contactForm}

@@ -4,7 +4,7 @@ import {
   Building2,
   Calendar,
   ChevronDown,
-  Download,
+  FileDown,
   ExternalLink,
   Github,
   Linkedin,
@@ -18,7 +18,7 @@ export const Icons = {
   sun: Sun,
   moon: Moon,
   arrowRight: ArrowRight,
-  download: Download,
+  download: FileDown,
   preview: ExternalLink,
   githubOutline: Github,
   briefcase: Briefcase,
@@ -76,6 +76,14 @@ export const Icons = {
   ),
   github: Github,
   linkedin: Linkedin,
+  shadcn: (props: LucideProps) => (
+    <svg viewBox="0 0 50 50" {...props}>
+      <path
+        fill="currentColor"
+        d="M34.51 6L12 28.51h8.47L43 6h-8.49zm3.49 15.49L27.49 32H36L46.5 21.49H38zM14 44l8.51-8.51H14V44z"
+      />
+    </svg>
+  ),
   sass: (props: LucideProps) => (
     <svg viewBox="0 0 50 50" {...props}>
       <g clipPath="url(#clip0_717_61)">
