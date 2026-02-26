@@ -35,6 +35,7 @@ export const siteConfig = {
     linkedin: 'https://www.linkedin.com/in/ritikchawla197',
     github: 'https://github.com/ritikchawla197',
     mailTo: 'mailto:ritikchawla197@gmail.com',
-    cvPdf: '/ritik-chawla-cv.pdf',
+    cvPdf: '/Ritik_Resume.pdf',
   },
 }
+
