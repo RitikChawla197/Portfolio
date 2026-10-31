@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Year-by-Year Breakdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f9fafb;
+    --border:#e5e7eb;
+    --text-primary:#111827;
+    --text-secondary:#4b5563;
+    --accent:#064e3b;
+    --font-serif:'Cormorant Garamond', Georgia, serif;
+    --font-sans:'Work Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:var(--bg-alt);
+    padding:48px 20px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .panel{
+    width:560px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    padding:1.6rem 1.6rem 1.8rem;
+  }
+
+  .section-title{
+    font-size:0.8rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--text-secondary);
+    margin-bottom:2px;
+  }
+  .chart-title{
+    font-family:var(--font-serif);
+    font-size:1.15rem;
+    font-weight:600;
+    color:var(--text-primary);
+    margin-bottom:1rem;
+  }
+
+  .table-wrapper{
+    max-height:340px;
+    overflow-y:auto;
+    border:1px solid var(--border);
+    position:relative;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:var(--font-mono);
+    font-size:0.76rem;
+  }
+  thead th{
+    position:sticky;
+    top:0;
+    background:var(--bg-alt);
+    text-align:right;
+    font-family:var(--font-sans);
+    font-size:0.62rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-secondary);
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+    z-index:2;
+  }
+  thead th:first-child{ text-align:left; }
+  tbody td{
+    text-align:right;
+    padding:7px 10px;
+    color:var(--text-primary);
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  tbody td:first-child{
+    text-align:left;
+    font-family:var(--font-sans);
+    font-weight:600;
+    color:var(--text-secondary);
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  tbody tr{
+    opacity:0;
+    transform:translateY(8px);
+    transition:opacity .35s ease, transform .35s ease, background-color .3s ease;
+  }
+  tbody tr.show{
+    opacity:1;
+    transform:translateY(0);
+  }
+  tbody tr.depletion-row{
+    background:transparent;
+  }
+  tbody tr.depletion-row.flash{
+    background:#fef2f2;
+  }
+  tbody tr.depletion-row.flash td:last-child{
+    color:#991b1b;
+    font-weight:600;
+  }
+
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:10px;
+    font-size:0.68rem;
+    color:var(--text-secondary);
+  }
+  .legend-dot{
+    width:7px;height:7px;
+    background:#fca5a5;
+    border:1px solid #991b1b;
+    flex-shrink:0;
+  }
+
+  /* --- Simulated cursor --- */
+  .fake-cursor{
+    position:fixed;
+    width:20px;height:20px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:opacity .3s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3)); width:20px; height:20px; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="section-title">Capital Ledger</div>
+  <div class="chart-title">Year-by-Year Breakdown</div>
+
+  <div class="table-wrapper" id="tableWrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>SIP / Mo</th>
+          <th>Invested</th>
+          <th>Withdrawn</th>
+          <th>Returns</th>
+          <th>Corpus</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="legend"><span class="legend-dot"></span> Row highlighted when capital depletes</div>
+</div>
+
+<script>
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+// ---- Simulate year-by-year ledger: 10yr accumulation, then 10yr withdrawal ----
+const MONTHLY_SIP = 25000;
+const ACC_YEARS = 10;
+const ACC_RATE = 0.12;
+const iAcc = ACC_RATE/12;
+const MONTHLY_SWP = 150000;
+const WITH_YEARS = 10;
+const WITH_RATE = 0.08;
+const iWith = WITH_RATE/12;
+const TOTAL_YEARS = ACC_YEARS + WITH_YEARS;
+
+let corpus = 0, invested = 0, withdrawnCum = 0, depletedYear = null;
+const rows = [];
+
+for(let year=1; year<=TOTAL_YEARS; year++){
+  for(let mo=0; mo<12; mo++){
+    if(year <= ACC_YEARS){
+      corpus = corpus*(1+iAcc) + MONTHLY_SIP;
+      invested += MONTHLY_SIP;
+    } else if(corpus > 0){
+      corpus = corpus*(1+iWith) - MONTHLY_SWP;
+      withdrawnCum += MONTHLY_SWP;
+      if(corpus <= 0){
+        corpus = 0;
+        if(depletedYear === null) depletedYear = year;
+      }
+    }
+  }
+  const returns = Math.max(0, corpus + withdrawnCum - invested);
+  rows.push({
+    year,
+    sip: year <= ACC_YEARS ? MONTHLY_SIP : 0,
+    invested,
+    withdrawn: withdrawnCum,
+    returns,
+    corpus,
+    isDepletion: year === depletedYear,
+  });
+}
+
+function fmtCompact(n){
+  if(n === 0) return '—';
+  if(n >= 1e7) return '₹' + (n/1e7).toFixed(2) + 'Cr';
+  if(n >= 1e5) return '₹' + (n/1e5).toFixed(1) + 'L';
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+const tbody = document.getElementById('tbody');
+tbody.innerHTML = rows.map(r => `
+  <tr class="${r.isDepletion ? 'depletion-row' : ''}" data-year="${r.year}">
+    <td>Y${r.year}</td>
+    <td>${r.sip ? fmtCompact(r.sip) : '—'}</td>
+    <td>${fmtCompact(r.invested)}</td>
+    <td>${fmtCompact(r.withdrawn)}</td>
+    <td>${fmtCompact(r.returns)}</td>
+    <td>${fmtCompact(r.corpus)}</td>
+  </tr>
+`).join('');
+
+const trs = Array.from(tbody.querySelectorAll('tr'));
+const tableWrapper = document.getElementById('tableWrapper');
+
+// ---- Simulated cursor ----
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#111827" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.4, TIP_Y = 2.6;
+function cursorTo(x,y){
+  fakeCursor.style.left = (x-TIP_X)+'px';
+  fakeCursor.style.top = (y-TIP_Y)+'px';
+}
+async function moveCursor(x,y){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x,y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  cursorTo(x,y);
+  await sleep(420);
+}
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+
+function wrapperCenter(){
+  const rect = tableWrapper.getBoundingClientRect();
+  return { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+}
+
+// small up/down bob to read as a scroll-wheel gesture at the cursor's resting spot
+function scrollWiggle(duration){
+  return new Promise(resolve=>{
+    const center = wrapperCenter();
+    const start = performance.now();
+    function step(now){
+      const t = (now-start)/duration;
+      const bob = Math.sin(t*Math.PI*10) * 4;
+      cursorTo(center.x, center.y + bob);
+      if(t<1){ requestAnimationFrame(step); }
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function animateScrollTo(target, duration){
+  return new Promise(resolve=>{
+    const startVal = tableWrapper.scrollTop;
+    const delta = target - startVal;
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now-start)/duration);
+      const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      tableWrapper.scrollTop = startVal + delta*ease;
+      if(t<1){ requestAnimationFrame(step); }
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function revealRows(){
+  trs.forEach(tr => tr.classList.remove('show'));
+  for(let idx=0; idx<trs.length; idx++){
+    trs[idx].classList.add('show');
+    await sleep(55);
+  }
+}
+
+async function runCycle(){
+  tableWrapper.scrollTop = 0;
+  await revealRows();
+  await sleep(600);
+
+  const center = wrapperCenter();
+  await moveCursor(center.x, center.y);
+
+  const depletionRow = trs.find(tr => tr.classList.contains('depletion-row'));
+  if(depletionRow){
+    const targetScroll = depletionRow.offsetTop - tableWrapper.clientHeight/2 + depletionRow.offsetHeight/2;
+    const scrollPromise = animateScrollTo(Math.max(0, targetScroll), 1400);
+    await Promise.all([scrollPromise, scrollWiggle(1400)]);
+
+    await sleep(200);
+    depletionRow.classList.add('flash');
+    await sleep(450);
+    depletionRow.classList.remove('flash');
+    await sleep(300);
+    depletionRow.classList.add('flash');
+    await sleep(450);
+
+    const bottomScroll = tableWrapper.scrollHeight - tableWrapper.clientHeight;
+    await Promise.all([animateScrollTo(bottomScroll, 1000), scrollWiggle(1000)]);
+    await sleep(1000);
+    depletionRow.classList.remove('flash');
+  }
+
+  hideCursorEl();
+  await animateScrollTo(0, 700);
+  await sleep(500);
+}
+
+async function loop(){
+  await runCycle();
+  loop();
+}
+loop();
+</script>
+</body>
+</html>

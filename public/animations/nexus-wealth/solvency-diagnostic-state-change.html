@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Solvency Diagnostic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f9fafb;
+    --border:#e5e7eb;
+    --text-primary:#111827;
+    --text-secondary:#4b5563;
+    --accent:#064e3b;
+    --font-serif:'Cormorant Garamond', Georgia, serif;
+    --font-sans:'Work Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:var(--bg-alt);
+    padding:48px 20px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .panel{
+    width:460px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    padding:2rem;
+  }
+
+  .section-title{
+    font-size:0.8rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--text-secondary);
+    margin-bottom:2px;
+  }
+  .chart-title{
+    font-family:var(--font-serif);
+    font-size:1.15rem;
+    font-weight:600;
+    color:var(--text-primary);
+    margin-bottom:1.6rem;
+  }
+
+  .parameter-control{ margin-bottom:1.8rem; }
+  .parameter-label{
+    display:block;
+    font-size:0.78rem;
+    font-weight:500;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+  }
+  .parameter-input-wrapper{
+    display:flex;
+    align-items:center;
+    border:1px solid var(--border);
+    padding:0.55rem 0.75rem;
+    margin-bottom:12px;
+    width:fit-content;
+    transition:border-color .2s ease;
+  }
+  .parameter-input-wrapper.active-focus{ border-color:var(--accent); }
+  .parameter-input-prefix{
+    font-family:var(--font-mono);
+    font-size:0.9rem;
+    color:var(--text-secondary);
+    margin-right:6px;
+  }
+  .parameter-value{
+    font-family:var(--font-mono);
+    font-size:1rem;
+    font-weight:500;
+    color:var(--text-primary);
+    min-width:76px;
+  }
+
+  .slider-track{
+    height:2px;
+    background:var(--border);
+    position:relative;
+    margin:0 5px;
+  }
+  .slider-fill{
+    position:absolute; top:0; left:0; height:100%;
+    background:var(--accent);
+  }
+  .slider-thumb{
+    position:absolute; top:50%;
+    width:12px;height:12px;
+    background:var(--accent);
+    transform:translate(-50%,-50%) scale(1);
+    transition:transform .15s ease;
+  }
+  .slider-thumb.grabbed{ transform:translate(-50%,-50%) scale(1.35); }
+
+  /* --- Diagnostic card (crossfading states) --- */
+  .diag-wrap{
+    position:relative;
+    min-height:104px;
+  }
+  .diag-card{
+    position:absolute;
+    inset:0;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    padding:1.1rem 1.2rem;
+    border:1px solid;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity .4s ease, transform .4s ease;
+    pointer-events:none;
+  }
+  .diag-card.show{
+    opacity:1;
+    transform:translateY(0);
+  }
+  .diag-card.solvent{
+    background:#f0fdf4;
+    border-color:#bbf7d0;
+    color:#064e3b;
+  }
+  .diag-card.exhausted{
+    background:#fef2f2;
+    border-color:#fca5a5;
+    color:#991b1b;
+  }
+  .diag-icon{ flex-shrink:0; margin-top:2px; }
+  .diag-title{
+    font-family:var(--font-serif);
+    font-size:1.05rem;
+    font-weight:600;
+    margin-bottom:3px;
+  }
+  .diag-text{
+    font-size:0.8rem;
+    line-height:1.45;
+    font-family:var(--font-sans);
+    opacity:0.9;
+  }
+  .diag-text .mono{
+    font-family:var(--font-mono);
+    font-weight:500;
+  }
+
+  /* --- Simulated cursor --- */
+  .fake-cursor{
+    position:fixed;
+    width:20px;height:20px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:opacity .3s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3)); width:20px; height:20px; transition:transform .15s ease; }
+  .fake-cursor.pressed svg{ transform:scale(0.82); }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="section-title">Withdrawal Phase</div>
+  <div class="chart-title">Monthly SWP Withdrawal</div>
+
+  <div class="parameter-control">
+    <label class="parameter-label">Withdrawal Amount</label>
+    <div class="parameter-input-wrapper" id="inputWrapper">
+      <span class="parameter-input-prefix">₹</span>
+      <span class="parameter-value" id="swpVal">1,20,000</span>
+    </div>
+    <div class="slider-track" id="sliderTrack">
+      <div class="slider-fill" id="sliderFill"></div>
+      <div class="slider-thumb" id="sliderThumb"></div>
+    </div>
+  </div>
+
+  <div class="diag-wrap">
+    <div class="diag-card solvent" id="cardSolvent">
+      <div class="diag-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 L20 5 V11 C20 16.5 16.5 20.7 12 22 C7.5 20.7 4 16.5 4 11 V5 Z"/>
+          <path d="M9 12.5 L11.2 14.7 L15.5 9.8"/>
+        </svg>
+      </div>
+      <div>
+        <div class="diag-title">Portfolio Solvent</div>
+        <div class="diag-text">Capital sustains withdrawals through <span class="mono" id="solventYear">Year 25</span> without depleting.</div>
+      </div>
+    </div>
+
+    <div class="diag-card exhausted" id="cardExhausted">
+      <div class="diag-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 L22 20 H2 Z"/>
+          <line x1="12" y1="9.5" x2="12" y2="14"/>
+          <circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="diag-title">Capital Exhaustion Risk</div>
+        <div class="diag-text">At this withdrawal rate, capital depletes in <span class="mono" id="depletedYear">Year 0</span> — before the projection ends.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+const MIN_SWP = 60000, MAX_SWP = 260000;
+const CORPUS = 25000000;
+const WITHDRAWAL_RATE = 0.08;
+const i = WITHDRAWAL_RATE / 12;
+const DURATION_YEARS = 25;
+const DURATION_MONTHS = DURATION_YEARS * 12;
+const PERPETUAL_THRESHOLD = CORPUS * i;
+
+const sliderTrack = document.getElementById('sliderTrack');
+const sliderFill = document.getElementById('sliderFill');
+const sliderThumb = document.getElementById('sliderThumb');
+const swpVal = document.getElementById('swpVal');
+const inputWrapper = document.getElementById('inputWrapper');
+const cardSolvent = document.getElementById('cardSolvent');
+const cardExhausted = document.getElementById('cardExhausted');
+const solventYear = document.getElementById('solventYear');
+const depletedYear = document.getElementById('depletedYear');
+
+function depletionMonths(withdrawal){
+  if(withdrawal <= PERPETUAL_THRESHOLD) return Infinity;
+  const x = withdrawal / (withdrawal - PERPETUAL_THRESHOLD);
+  return Math.log(x) / Math.log(1+i);
+}
+
+let lastState = null;
+
+function setSwp(amount){
+  amount = Math.max(MIN_SWP, Math.min(MAX_SWP, amount));
+  const pct = (amount - MIN_SWP) / (MAX_SWP - MIN_SWP);
+  sliderFill.style.width = (pct*100) + '%';
+  sliderThumb.style.left = (pct*100) + '%';
+  swpVal.textContent = Math.round(amount).toLocaleString('en-IN');
+
+  const months = depletionMonths(amount);
+  const isSolvent = months > DURATION_MONTHS;
+
+  if(isSolvent){
+    solventYear.textContent = 'Year ' + DURATION_YEARS;
+  } else {
+    depletedYear.textContent = 'Year ' + Math.max(1, Math.round(months/12));
+  }
+
+  if(isSolvent !== lastState){
+    cardSolvent.classList.toggle('show', isSolvent);
+    cardExhausted.classList.toggle('show', !isSolvent);
+    lastState = isSolvent;
+  }
+}
+
+setSwp(MIN_SWP + 5000);
+
+// ---- Simulated cursor ----
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#111827" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.4, TIP_Y = 2.6;
+function cursorTo(x,y){
+  fakeCursor.style.left = (x-TIP_X)+'px';
+  fakeCursor.style.top = (y-TIP_Y)+'px';
+}
+async function moveCursor(x,y,duration){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x,y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  fakeCursor.style.transition = `opacity .3s ease, left ${duration}ms cubic-bezier(.4,.2,.2,1), top ${duration}ms cubic-bezier(.4,.2,.2,1)`;
+  cursorTo(x,y);
+  await sleep(duration);
+}
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+
+function trackPointForAmount(amount){
+  const rect = sliderTrack.getBoundingClientRect();
+  const pct = (amount - MIN_SWP) / (MAX_SWP - MIN_SWP);
+  return { x: rect.left + pct * rect.width, y: rect.top + rect.height/2 };
+}
+
+function dragTo(fromAmount, toAmount, duration){
+  return new Promise(resolve=>{
+    fakeCursor.style.transition = 'opacity .3s ease';
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now-start)/duration);
+      const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      const amount = fromAmount + (toAmount-fromAmount)*ease;
+      setSwp(amount);
+      const pt = trackPointForAmount(amount);
+      cursorTo(pt.x, pt.y);
+      if(t<1){ requestAnimationFrame(step); }
+      else { resolve(); }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function runCycle(){
+  const startAmount = MIN_SWP + 5000;
+  setSwp(startAmount);
+  await sleep(700);
+
+  const startPt = trackPointForAmount(startAmount);
+  await moveCursor(startPt.x, startPt.y, 500);
+
+  sliderThumb.classList.add('grabbed');
+  inputWrapper.classList.add('active-focus');
+  fakeCursor.classList.add('pressed');
+  await sleep(160);
+
+  // drag up past the depletion threshold
+  await dragTo(startAmount, MAX_SWP - 5000, 2000);
+  await sleep(1400);
+
+  // drag back down to safety
+  await dragTo(MAX_SWP - 5000, startAmount, 1800);
+  await sleep(1200);
+
+  fakeCursor.classList.remove('pressed');
+  sliderThumb.classList.remove('grabbed');
+  inputWrapper.classList.remove('active-focus');
+  await sleep(900);
+
+  hideCursorEl();
+  await sleep(700);
+}
+
+async function loop(){
+  await runCycle();
+  loop();
+}
+loop();
+</script>
+</body>
+</html>

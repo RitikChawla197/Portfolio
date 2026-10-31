@@ -1,39 +1,63 @@
-'use client'
+import About from "@/components/About";
+import ContactSection from "@/components/ContactSection";
+import Container from "@/components/Container";
+import HeroSection from "@/components/HeroSection";
+import Navbar from "@/components/Navbar";
+import ProjectsSection from "@/components/ProjectsSection";
+import SectionHeading from "@/components/SectionHeading";
+import SkillSection from "@/components/SkillsSection/SkillsSection";
+import ExperienceSection from "@/components/ExperienceSection/Experience";
+import EducationSection from "@/components/EducationSection";
+import CertificationsSection from "@/components/CertificationsSection";
+import LoadingScreen from "@/components/InitialLoadShell";
+import GithubActivityCard from "@/components/GithubActivityCard";
 
-import AboutSection from '@/components/about-section'
-import ContactSection from '@/components/contact-section'
-import ExperienceSection from '@/components/experience-section'
-import Header from '@/components/header'
-import HeroSection from '@/components/hero-section'
-import LoadingScreen from '@/components/LoadingScreen'
-import ProjectsSection from '@/components/projects-section'
-import SectionDivider from '@/components/section-divider'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { useState } from 'react'
-
-export default function Home() {
-  const [loading, setLoading] = useState(true)
-
+const page = () => {
   return (
-    <>
-      {loading ? (
-        <LoadingScreen onFinish={() => setLoading(false)} />
-      ) : (
-        <>
-          <div className="max-w-3xl mx-auto flex flex-col items-center">
-            <Header />
-            <HeroSection />
-            <AboutSection />
-            <SectionDivider />
-            <ExperienceSection />
-            <SectionDivider />
-            <ProjectsSection />
-            <ContactSection />
+    <LoadingScreen>
+      <Container>
+        <div className="w-full md:px-8">
+          <div className="text-white bg-[#09090B]">
+            <Navbar />
+            <section data-section-label="Hero section">
+              <HeroSection />
+            </section>
+            <section data-section-label="Projects section">
+              <SectionHeading title="Projects" />
+              <ProjectsSection />
+            </section>
+            <section data-section-label="Experience section">
+              <SectionHeading title="Experience" />
+              <ExperienceSection />
+            </section>
+            <section data-section-label="Skills section">
+              <SectionHeading title="Skills" />
+              <SkillSection />
+            </section>
+            <section data-section-label="Education section">
+              <SectionHeading title="Education" />
+              <EducationSection />
+            </section>
+            <section data-section-label="Certifications section">
+              <SectionHeading title="Certifications" />
+              <CertificationsSection />
+            </section>
+            <section data-section-label="Github section">
+              <SectionHeading title="Github Graph" />
+              <GithubActivityCard />
+            </section>
+            <section data-section-label="About section">
+              <SectionHeading title="About Me" />
+              <About />
+            </section>
+            <section data-section-label="Contact section">
+              <ContactSection />
+            </section>
           </div>
+        </div>
+      </Container>
+    </LoadingScreen>
+  );
+};
 
-          <ThemeToggle className="bg-background hidden sm:fixed sm:bottom-8 sm:right-8 sm:flex" />
-        </>
-      )}
-    </>
-  )
-}
+export default page;

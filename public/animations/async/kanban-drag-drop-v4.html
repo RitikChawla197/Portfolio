@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kanban Drag & Drop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    font-family:'DM Sans', system-ui, sans-serif;
+    transition:background-color .7s ease;
+  }
+  body{
+    padding:26px 18px 44px;
+  }
+  .mono{font-family:'Geist Mono', monospace;}
+
+  body[data-theme="light"]{ background:#f2f3f6; }
+  body[data-theme="dark"]{ background:#0a0b10; }
+
+  .wrap{max-width:900px;margin:0 auto;}
+
+  .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .top-title{font-size:15px;font-weight:800;letter-spacing:-0.01em;transition:color .7s ease;}
+  .top-sub{font-size:11px;font-weight:500;transition:color .7s ease;}
+  body[data-theme="light"] .top-title{color:#0b0e14;}
+  body[data-theme="light"] .top-sub{color:#6b7280;}
+  body[data-theme="dark"] .top-title{color:#f2f3f6;}
+  body[data-theme="dark"] .top-sub{color:#9096a3;}
+
+  .mode-pill{
+    display:flex;align-items:center;gap:6px;
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    padding:5px 10px;border-radius:20px;
+    transition:background-color .7s ease, color .7s ease, border-color .7s ease;
+  }
+  .mode-dot{width:7px;height:7px;border-radius:50%;transition:background-color .5s ease;}
+  body[data-theme="light"] .mode-pill{background:#fff;border:1px solid #dfe2e8;color:#0b0e14;}
+  body[data-theme="dark"] .mode-pill{background:#1b1e29;border:1px solid #2b2f3d;color:#f2f3f6;}
+  body[data-theme="light"] .mode-dot{background:#eab308;}
+  body[data-theme="dark"] .mode-dot{background:#7c8cff;}
+
+  .panel{
+    border-radius:14px;
+    padding:16px;
+    transition:background-color .7s ease, border-color .7s ease;
+  }
+  body[data-theme="light"] .panel{background:#ffffff;border:1px solid #e7e9ee;}
+  body[data-theme="dark"] .panel{background:#12141c;border:1px solid #262a36;}
+
+  .board{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+  @media (max-width:640px){ .board{grid-template-columns:repeat(2,1fr);} }
+
+  .column{
+    border-radius:11px;
+    padding:9px;
+    min-height:300px;
+    display:flex;flex-direction:column;gap:8px;
+    transition:background-color .7s ease, border-color .7s ease, box-shadow .18s ease;
+    border:1px solid transparent;
+  }
+  body[data-theme="light"] .column{background:#fafbfc;border-color:#e7e9ee;}
+  body[data-theme="dark"] .column{background:#171a24;border-color:#262a36;}
+  .column.drop-target{box-shadow:inset 0 0 0 1.5px #2563eb;}
+
+  .column-head{display:flex;align-items:center;gap:6px;padding:2px 3px 4px;}
+  .status-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+  .column-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;transition:color .7s ease;}
+  body[data-theme="light"] .column-name{color:#0b0e14;}
+  body[data-theme="dark"] .column-name{color:#f2f3f6;}
+  .column-count{
+    margin-left:auto;font-size:9px;font-weight:600;border-radius:5px;padding:1px 5px;
+    transition:background-color .7s ease, color .7s ease;
+  }
+  body[data-theme="light"] .column-count{background:#eef0f3;color:#6b7280;}
+  body[data-theme="dark"] .column-count{background:#242836;color:#9096a3;}
+
+  .cardslot{display:flex;flex-direction:column;gap:8px;min-height:4px;}
+
+  .card{
+    border-radius:8px;
+    padding:9px 10px 10px;
+    cursor:default;
+    user-select:none;
+    transform:translate(0,0) rotate(0deg) scale(1);
+    transition:box-shadow .2s ease, transform .2s ease, opacity .15s ease,
+               background-color .7s ease, border-color .7s ease, color .7s ease;
+  }
+  body[data-theme="light"] .card{background:#ffffff;border:1px solid #e7e9ee;color:#0b0e14;box-shadow:0 1px 2px rgba(16,24,40,0.05);}
+  body[data-theme="dark"] .card{background:#1b1e29;border:1px solid #2b2f3d;color:#f2f3f6;box-shadow:0 1px 2px rgba(0,0,0,0.35);}
+
+  .card.is-placeholder{
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  .card.settle{animation:settle .3s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes settle{
+    0%{transform:scale(1.04) rotate(0.6deg);}
+    60%{transform:scale(0.99) rotate(-0.3deg);}
+    100%{transform:scale(1) rotate(0deg);}
+  }
+
+  .card-title{font-size:12px;font-weight:600;line-height:1.3;margin-bottom:6px;}
+  .card-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 6px;border-radius:4px;color:#fff;}
+  .badge.high{background:#ef4444;}
+  .badge.med{background:#eab308;color:#1a1400;}
+  .badge.low{background:#22c55e;color:#04270f;}
+
+  .avatar{
+    width:16px;height:16px;border-radius:50%;
+    font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    font-family:'Geist Mono',monospace;flex-shrink:0;
+    transition:background-color .7s ease, color .7s ease;
+  }
+  body[data-theme="light"] .avatar{background:#dbe1ea;color:#3a4354;}
+  body[data-theme="dark"] .avatar{background:#333849;color:#c7cce0;}
+
+  .empty-hint{
+    font-size:10px;text-align:center;padding:12px 4px;border-radius:7px;
+    transition:color .7s ease, border-color .7s ease;
+  }
+  body[data-theme="light"] .empty-hint{color:#c7cbd3;border:1.5px dashed #e5e7eb;}
+  body[data-theme="dark"] .empty-hint{color:#4a4f5e;border:1.5px dashed #2c303e;}
+
+  .flying-clone{
+    position:fixed;
+    pointer-events:none;
+    z-index:998;
+    border-radius:8px;
+    box-shadow:0 20px 26px -8px rgba(0,0,0,0.28), 0 8px 12px -6px rgba(0,0,0,0.2);
+    opacity:0.98;
+  }
+  .flying-clone.scripted{
+    animation:flightArc 0.8s cubic-bezier(.32,.68,.36,1) forwards;
+  }
+  @keyframes flightArc{
+    0%{ transform: translate(0,0) rotate(0deg) scale(1.03); }
+    45%{ transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5 - 58px)) rotate(-3deg) scale(1.06); }
+    100%{ transform: translate(var(--dx), var(--dy)) rotate(0deg) scale(1); }
+  }
+
+  /* --- Simulated cursor, used only for the scripted auto-demo --- */
+  .fake-cursor{
+    position:fixed;
+    width:22px;height:22px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:left .48s cubic-bezier(.4,.2,.2,1), top .48s cubic-bezier(.4,.2,.2,1), opacity .25s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35)); transition:transform .15s ease; }
+  .fake-cursor.pressed svg{ transform:scale(0.8); }
+
+  .cursor-ripple{
+    position:fixed;
+    width:10px;height:10px;
+    margin-left:-5px;margin-top:-5px;
+    border-radius:50%;
+    border:2px solid #2563eb;
+    pointer-events:none;
+    z-index:1999;
+    animation:cursor-ripple .55s ease-out forwards;
+  }
+  @keyframes cursor-ripple{
+    0%{ transform:scale(0.5); opacity:0.8; }
+    100%{ transform:scale(3.4); opacity:0; }
+  }
+</style>
+</head>
+<body data-theme="light">
+
+<div class="wrap">
+  <div class="top-bar">
+    <div>
+      <div class="top-title">Sprint Board</div>
+      <div class="top-sub">Animated preview</div>
+    </div>
+    <div class="mode-pill"><span class="mode-dot" id="modeDot"></span><span id="modeLabel">Light</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<script>
+const COLUMNS = [
+  {status:'todo', name:'To-do', color:'#2563eb'},
+  {status:'progress', name:'In Progress', color:'#9333ea'},
+  {status:'review', name:'In Review', color:'#eab308'},
+  {status:'completed', name:'Completed', color:'#16a34a'},
+];
+const prioLabel = {high:'High', med:'Med', low:'Low'};
+
+function seedData(){
+  return {
+    todo: [
+      {id:'TSK-142', title:'Set up OAuth provider config', prio:'high', init:'AR'},
+      {id:'TSK-138', title:'Write onboarding empty-state copy', prio:'low', init:'JM'},
+      {id:'TSK-151', title:'Audit color contrast on dark mode', prio:'med', init:'KP'},
+    ],
+    progress: [
+      {id:'TSK-129', title:'Kanban drag-and-drop for mobile touch', prio:'high', init:'AR'},
+      {id:'TSK-133', title:'Pomodoro timer chime + haptics', prio:'med', init:'DL'},
+    ],
+    review: [
+      {id:'TSK-121', title:'Subtask checklist component', prio:'med', init:'JM'},
+    ],
+    completed: [
+      {id:'TSK-108', title:'Task creation modal validation', prio:'low', init:'KP'},
+    ],
+  };
+}
+
+const TRANSPARENT_DRAG_IMG = new Image();
+TRANSPARENT_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ycAAAAAAQABAAACAUwAOw==';
+
+function cardHTML(t){
+  return `<div class="card" data-id="${t.id}">
+    <div class="card-title">${t.title}</div>
+    <div class="card-meta">
+      <span class="badge ${t.prio}">${prioLabel[t.prio]}</span>
+      <span class="avatar mono">${t.init}</span>
+    </div>
+  </div>`;
+}
+
+const boardEl = document.getElementById('board');
+let data = seedData();
+
+boardEl.innerHTML = COLUMNS.map(c => `
+  <div class="column" data-status="${c.status}">
+    <div class="column-head">
+      <span class="status-dot" style="background:${c.color}"></span>
+      <span class="column-name">${c.name}</span>
+      <span class="column-count" data-count></span>
+    </div>
+    <div class="cardslot" data-slot></div>
+  </div>
+`).join('');
+
+const columnEls = {};
+COLUMNS.forEach(c => { columnEls[c.status] = boardEl.querySelector(`.column[data-status="${c.status}"]`); });
+
+function render(){
+  COLUMNS.forEach(c=>{
+    const colEl = columnEls[c.status];
+    const items = data[c.status];
+    colEl.querySelector('[data-count]').textContent = items.length;
+    colEl.querySelector('[data-slot]').innerHTML = items.length
+      ? items.map(cardHTML).join('')
+      : `<div class="empty-hint">No tasks</div>`;
+  });
+}
+
+function findCard(id){
+  for(const status in data){
+    const idx = data[status].findIndex(c=>c.id===id);
+    if(idx>-1) return {status, idx};
+  }
+  return null;
+}
+
+function commitMove(id, toStatus){
+  const loc = findCard(id);
+  if(!loc || loc.status===toStatus) return;
+  const [task] = data[loc.status].splice(loc.idx,1);
+  data[toStatus].push(task);
+  render();
+  requestAnimationFrame(()=>{
+    const el = boardEl.querySelector(`.card[data-id="${id}"]`);
+    if(el){ el.classList.add('settle'); setTimeout(()=>el.classList.remove('settle'), 320); }
+  });
+}
+
+function reservePlaceholder(cardEl, destColEl){
+  const placeholder = cardEl.cloneNode(true);
+  placeholder.classList.add('is-placeholder');
+  placeholder.removeAttribute('draggable');
+  destColEl.querySelector('[data-slot]').appendChild(placeholder);
+  const emptyHint = destColEl.querySelector('.empty-hint');
+  if(emptyHint) emptyHint.remove();
+  return placeholder;
+}
+
+// ---- Simulated cursor helpers (used only by the scripted auto-demo) ----
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#1a1d27" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.7, TIP_Y = 2.8;
+
+function cursorTo(x, y){
+  fakeCursor.style.left = (x - TIP_X) + 'px';
+  fakeCursor.style.top = (y - TIP_Y) + 'px';
+}
+async function moveCursor(x, y){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x, y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  cursorTo(x, y);
+  await sleep(480);
+}
+function pressCursor(){
+  fakeCursor.classList.add('pressed');
+  spawnRipple(parseFloat(fakeCursor.style.left)+TIP_X, parseFloat(fakeCursor.style.top)+TIP_Y);
+}
+function releaseCursor(){ fakeCursor.classList.remove('pressed'); }
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+function spawnRipple(x,y){
+  const r = document.createElement('div');
+  r.className = 'cursor-ripple';
+  r.style.left = x+'px';
+  r.style.top = y+'px';
+  document.body.appendChild(r);
+  setTimeout(()=> r.remove(), 600);
+}
+
+// Moves the cursor along the same arc the card flies, using JS-driven frames
+// so it never snaps — it lands exactly in sync with the flying card.
+function animateCursorPath(x1,y1,x2,y2,duration){
+  return new Promise(resolve=>{
+    fakeCursor.style.transition = 'none';
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now-start)/duration);
+      const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      const lift = Math.sin(Math.PI*t) * 58;
+      const x = x1 + (x2-x1)*ease;
+      const y = y1 + (y2-y1)*ease - lift;
+      cursorTo(x, y);
+      if(t<1){ requestAnimationFrame(step); }
+      else { cursorTo(x2,y2); fakeCursor.style.transition = ''; resolve(); }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function flightMove(id, toStatus){
+  const cardEl = boardEl.querySelector(`.card[data-id="${id}"]`);
+  const destColEl = columnEls[toStatus];
+  if(!cardEl || !destColEl) return;
+
+  const srcRect = cardEl.getBoundingClientRect();
+  const placeholder = reservePlaceholder(cardEl, destColEl);
+  const destRect = placeholder.getBoundingClientRect();
+
+  const gOffX = srcRect.width * 0.3;
+  const gOffY = srcRect.height * 0.4;
+  const srcGrabX = srcRect.left + gOffX;
+  const srcGrabY = srcRect.top + gOffY;
+  const destGrabX = destRect.left + gOffX;
+  const destGrabY = destRect.top + gOffY;
+
+  await moveCursor(srcGrabX, srcGrabY);
+  pressCursor();
+  await sleep(180);
+
+  const clone = cardEl.cloneNode(true);
+  clone.classList.add('flying-clone','scripted');
+  clone.removeAttribute('draggable');
+  clone.style.left = srcRect.left + 'px';
+  clone.style.top = srcRect.top + 'px';
+  clone.style.width = srcRect.width + 'px';
+  clone.style.height = srcRect.height + 'px';
+
+  const dx = destRect.left - srcRect.left;
+  const dy = destRect.top - srcRect.top;
+  clone.style.setProperty('--dx', dx + 'px');
+  clone.style.setProperty('--dy', dy + 'px');
+
+  cardEl.style.visibility = 'hidden';
+  document.body.appendChild(clone);
+
+  const cursorFlight = animateCursorPath(srcGrabX, srcGrabY, destGrabX, destGrabY, 800);
+
+  await new Promise(resolve=>{
+    clone.addEventListener('animationend', ()=>{
+      clone.remove();
+      placeholder.remove();
+      commitMove(id, toStatus);
+      resolve();
+    }, {once:true});
+  });
+  await cursorFlight;
+
+  releaseCursor();
+  spawnRipple(destGrabX, destGrabY);
+  await sleep(150);
+}
+
+render();
+
+// ---- Auto theme flip ----
+const modeLabel = document.getElementById('modeLabel');
+function setTheme(theme){
+  document.body.setAttribute('data-theme', theme);
+  modeLabel.textContent = theme === 'light' ? 'Light' : 'Dark';
+}
+setInterval(()=>{
+  const current = document.body.getAttribute('data-theme');
+  setTheme(current === 'light' ? 'dark' : 'light');
+}, 4000);
+
+// ---- Auto drag demo loop ----
+async function runDemoOnce(){
+  await flightMove('TSK-142', 'progress');
+  await sleep(500);
+  await flightMove('TSK-129', 'review');
+  await sleep(500);
+  await flightMove('TSK-121', 'completed');
+}
+
+async function demoLoop(){
+  await runDemoOnce();
+  await sleep(1200);
+  hideCursorEl();
+  await sleep(1400);
+  data = seedData();
+  render();
+  await sleep(900);
+  demoLoop();
+}
+demoLoop();
+</script>
+</body>
+</html>

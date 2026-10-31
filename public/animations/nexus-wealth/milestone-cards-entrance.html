@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Milestone Cards Entrance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f9fafb;
+    --border:#e5e7eb;
+    --text-primary:#111827;
+    --text-secondary:#4b5563;
+    --accent:#064e3b;
+    --font-serif:'Cormorant Garamond', Georgia, serif;
+    --font-sans:'Work Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:var(--bg-alt);
+    padding:48px 20px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .panel{
+    width:560px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    padding:2rem;
+  }
+
+  .section-title{
+    font-size:0.8rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--text-secondary);
+    margin-bottom:2px;
+  }
+  .chart-title{
+    font-family:var(--font-serif);
+    font-size:1.15rem;
+    font-weight:600;
+    color:var(--text-primary);
+    margin-bottom:1.6rem;
+  }
+
+  .parameter-control{ margin-bottom:2rem; }
+  .parameter-label{
+    display:block;
+    font-size:0.78rem;
+    font-weight:500;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+  }
+  .parameter-input-wrapper{
+    display:flex;
+    align-items:center;
+    border:1px solid var(--border);
+    padding:0.5rem 0.7rem;
+    margin-bottom:12px;
+    width:fit-content;
+    transition:border-color .2s ease;
+  }
+  .parameter-input-wrapper.active-focus{ border-color:var(--accent); }
+  .parameter-value{
+    font-family:var(--font-mono);
+    font-size:0.95rem;
+    font-weight:500;
+    color:var(--text-primary);
+    min-width:38px;
+  }
+  .parameter-input-suffix{
+    font-family:var(--font-mono);
+    font-size:0.85rem;
+    color:var(--text-secondary);
+    margin-left:2px;
+  }
+
+  .slider-track{
+    height:2px;
+    background:var(--border);
+    position:relative;
+    margin:0 5px;
+  }
+  .slider-fill{ position:absolute; top:0; left:0; height:100%; background:var(--accent); }
+  .slider-thumb{
+    position:absolute; top:50%;
+    width:12px;height:12px;
+    background:var(--accent);
+    transform:translate(-50%,-50%) scale(1);
+    transition:transform .15s ease;
+  }
+  .slider-thumb.grabbed{ transform:translate(-50%,-50%) scale(1.35); }
+
+  /* --- Milestone grid --- */
+  .milestones-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+  }
+  .metric-card{
+    background:var(--bg);
+    padding:1rem 1rem 1.1rem;
+    opacity:0;
+    transform:translateY(16px) scale(0.96);
+    transition:opacity .38s cubic-bezier(.22,.9,.32,1.1), transform .38s cubic-bezier(.22,.9,.32,1.1), box-shadow .3s ease;
+  }
+  .metric-card.enter{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+  .metric-card.accent-border{
+    border-top:2px solid var(--accent);
+  }
+  .metric-card.pulse{
+    box-shadow:0 0 0 3px rgba(6,78,59,0.16);
+  }
+  .metric-label{
+    font-size:0.65rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+  }
+  .metric-val{
+    font-family:var(--font-mono);
+    font-size:1.3rem;
+    font-weight:500;
+    letter-spacing:-0.02em;
+    color:var(--text-primary);
+  }
+  .metric-card.accent-border .metric-val{ color:var(--accent); }
+
+  /* --- Simulated cursor --- */
+  .fake-cursor{
+    position:fixed;
+    width:20px;height:20px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:opacity .3s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3)); width:20px; height:20px; transition:transform .15s ease; }
+  .fake-cursor.pressed svg{ transform:scale(0.82); }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="section-title">Accumulation Phase</div>
+  <div class="chart-title">Compounding Rate</div>
+
+  <div class="parameter-control">
+    <label class="parameter-label">Expected Annual Return</label>
+    <div class="parameter-input-wrapper" id="inputWrapper">
+      <span class="parameter-value" id="rateVal">8.0</span>
+      <span class="parameter-input-suffix">%</span>
+    </div>
+    <div class="slider-track" id="sliderTrack">
+      <div class="slider-fill" id="sliderFill"></div>
+      <div class="slider-thumb" id="sliderThumb"></div>
+    </div>
+  </div>
+
+  <div class="milestones-grid" id="milestonesGrid">
+    <div class="metric-card" id="cardInvested">
+      <div class="metric-label">Total Investment</div>
+      <div class="metric-val" id="investedVal">₹0</div>
+    </div>
+    <div class="metric-card" id="cardStop">
+      <div class="metric-label">Corpus @ SIP Stop</div>
+      <div class="metric-val" id="stopVal">₹0</div>
+    </div>
+    <div class="metric-card" id="cardWithdrawn">
+      <div class="metric-label">Total SWP Withdrawal</div>
+      <div class="metric-val" id="withdrawnVal">₹0</div>
+    </div>
+    <div class="metric-card accent-border" id="cardFinal">
+      <div class="metric-label">Final Corpus</div>
+      <div class="metric-val" id="finalVal">₹0</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+const MIN_RATE = 4, MAX_RATE = 18;
+const MONTHLY_SIP = 25000;
+const ACC_MONTHS = 120;
+const MONTHLY_SWP = 150000;
+const WITH_MONTHS = 120;
+const WITH_RATE = 0.08;
+const iWith = WITH_RATE / 12;
+
+const INVESTED_TOTAL = MONTHLY_SIP * ACC_MONTHS;
+
+function computeScenario(ratePct){
+  const iAcc = (ratePct/100) / 12;
+  const corpusAtStop = MONTHLY_SIP * ((Math.pow(1+iAcc, ACC_MONTHS) - 1) / iAcc) * (1+iAcc);
+
+  // simulate withdrawal phase month by month to find true depletion / final value
+  let corpus = corpusAtStop;
+  let withdrawn = 0;
+  for(let m=0; m<WITH_MONTHS; m++){
+    if(corpus <= 0){ corpus = 0; continue; }
+    corpus = corpus*(1+iWith) - MONTHLY_SWP;
+    withdrawn += MONTHLY_SWP;
+    if(corpus < 0) corpus = 0;
+  }
+  return { invested: INVESTED_TOTAL, corpusAtStop, withdrawn, finalCorpus: corpus };
+}
+
+const sliderTrack = document.getElementById('sliderTrack');
+const sliderFill = document.getElementById('sliderFill');
+const sliderThumb = document.getElementById('sliderThumb');
+const rateVal = document.getElementById('rateVal');
+const inputWrapper = document.getElementById('inputWrapper');
+
+const cards = {
+  invested: document.getElementById('cardInvested'),
+  stop: document.getElementById('cardStop'),
+  withdrawn: document.getElementById('cardWithdrawn'),
+  final: document.getElementById('cardFinal'),
+};
+const vals = {
+  invested: document.getElementById('investedVal'),
+  stop: document.getElementById('stopVal'),
+  withdrawn: document.getElementById('withdrawnVal'),
+  final: document.getElementById('finalVal'),
+};
+
+function fmtINR(n){
+  if(n >= 1e7) return '₹' + (n/1e7).toFixed(2) + 'Cr';
+  if(n >= 1e5) return '₹' + (n/1e5).toFixed(1) + 'L';
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+function setSliderVisual(ratePct){
+  const pct = (ratePct - MIN_RATE) / (MAX_RATE - MIN_RATE);
+  sliderFill.style.width = (pct*100) + '%';
+  sliderThumb.style.left = (pct*100) + '%';
+  rateVal.textContent = ratePct.toFixed(1);
+}
+
+const cardOrder = ['invested', 'stop', 'withdrawn', 'final'];
+
+async function playEntrance(scenario){
+  // exit
+  cardOrder.forEach(key => cards[key].classList.remove('enter', 'pulse'));
+  await sleep(60);
+
+  // update values while hidden
+  vals.invested.textContent = fmtINR(scenario.invested);
+  vals.stop.textContent = fmtINR(scenario.corpusAtStop);
+  vals.withdrawn.textContent = fmtINR(scenario.withdrawn);
+  vals.final.textContent = fmtINR(scenario.finalCorpus);
+
+  // staggered re-entrance, Final Corpus last with an emphasis pulse
+  for(const key of cardOrder){
+    cards[key].classList.add('enter');
+    if(key === 'final'){
+      await sleep(90);
+      cards.final.classList.add('pulse');
+      setTimeout(()=> cards.final.classList.remove('pulse'), 500);
+    } else {
+      await sleep(90);
+    }
+  }
+}
+
+// ---- Simulated cursor ----
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#111827" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.4, TIP_Y = 2.6;
+function cursorTo(x,y){
+  fakeCursor.style.left = (x-TIP_X)+'px';
+  fakeCursor.style.top = (y-TIP_Y)+'px';
+}
+async function moveCursor(x,y,duration){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x,y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  fakeCursor.style.transition = `opacity .3s ease, left ${duration}ms cubic-bezier(.4,.2,.2,1), top ${duration}ms cubic-bezier(.4,.2,.2,1)`;
+  cursorTo(x,y);
+  await sleep(duration);
+}
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+
+function trackPointForRate(ratePct){
+  const rect = sliderTrack.getBoundingClientRect();
+  const pct = (ratePct - MIN_RATE) / (MAX_RATE - MIN_RATE);
+  return { x: rect.left + pct * rect.width, y: rect.top + rect.height/2 };
+}
+
+function dragTo(fromRate, toRate, duration){
+  return new Promise(resolve=>{
+    fakeCursor.style.transition = 'opacity .3s ease';
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now-start)/duration);
+      const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      const rate = fromRate + (toRate-fromRate)*ease;
+      setSliderVisual(rate);
+      const pt = trackPointForRate(rate);
+      cursorTo(pt.x, pt.y);
+      if(t<1){ requestAnimationFrame(step); }
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function runCycle(){
+  const startRate = 8;
+  setSliderVisual(startRate);
+  cardOrder.forEach(key => cards[key].classList.remove('enter','pulse'));
+  await sleep(400);
+  await playEntrance(computeScenario(startRate));
+  await sleep(1800);
+
+  const startPt = trackPointForRate(startRate);
+  await moveCursor(startPt.x, startPt.y, 500);
+  sliderThumb.classList.add('grabbed');
+  inputWrapper.classList.add('active-focus');
+  fakeCursor.classList.add('pressed');
+  await sleep(160);
+
+  await dragTo(startRate, 15, 1400);
+  fakeCursor.classList.remove('pressed');
+  sliderThumb.classList.remove('grabbed');
+  inputWrapper.classList.remove('active-focus');
+  await sleep(200);
+  await playEntrance(computeScenario(15));
+  await sleep(2200);
+
+  const midPt = trackPointForRate(15);
+  await moveCursor(midPt.x, midPt.y, 400);
+  sliderThumb.classList.add('grabbed');
+  inputWrapper.classList.add('active-focus');
+  fakeCursor.classList.add('pressed');
+  await sleep(160);
+
+  await dragTo(15, 5.5, 1400);
+  fakeCursor.classList.remove('pressed');
+  sliderThumb.classList.remove('grabbed');
+  inputWrapper.classList.remove('active-focus');
+  await sleep(200);
+  await playEntrance(computeScenario(5.5));
+  await sleep(2200);
+
+  hideCursorEl();
+  await sleep(700);
+}
+
+async function loop(){
+  await runCycle();
+  loop();
+}
+loop();
+</script>
+</body>
+</html>

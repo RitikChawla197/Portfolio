@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Multi-select / Bulk Actions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'DM Sans', system-ui, sans-serif;
+    background:#f2f3f6;
+    padding:36px 20px 120px;
+    display:flex;
+    justify-content:center;
+  }
+  .mono{font-family:'Geist Mono', monospace;}
+
+  .panel{
+    width:460px;
+  }
+
+  .head{margin-bottom:14px;}
+  .head-title{font-size:14px;font-weight:800;color:#0b0e14;letter-spacing:-0.01em;}
+  .head-sub{font-size:10.5px;color:#9096a3;margin-top:2px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+  }
+
+  .task{
+    position:relative;
+    background:#fff;
+    border:1.5px solid #e7e9ee;
+    border-radius:9px;
+    padding:10px 10px 10px;
+    cursor:default;
+    user-select:none;
+    box-shadow:0 1px 2px rgba(16,24,40,0.04);
+    transition:border-color .22s ease, box-shadow .22s ease, transform .22s cubic-bezier(.3,.7,.3,1), opacity .25s ease;
+  }
+  .task:hover{ border-color:#c8cedb; }
+  .task.selected{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,0.14);
+  }
+  .task.removing{
+    transform:scale(0.85);
+    opacity:0;
+  }
+
+  .check-overlay{
+    position:absolute;
+    top:7px;
+    right:7px;
+    width:17px;height:17px;
+    border-radius:50%;
+    background:#2563eb;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform:scale(0);
+    transition:transform .28s cubic-bezier(.34,1.7,.4,1);
+  }
+  .task.selected .check-overlay{ transform:scale(1); }
+  .check-overlay svg{width:10px;height:10px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+
+  .task-title{
+    font-size:11.5px;
+    font-weight:600;
+    color:#0b0e14;
+    line-height:1.35;
+    margin-bottom:7px;
+    padding-right:16px;
+  }
+  .task-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .badge{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-radius:4px;color:#fff;}
+  .badge.high{background:#ef4444;}
+  .badge.med{background:#eab308;color:#1a1400;}
+  .badge.low{background:#22c55e;color:#04270f;}
+
+  .avatar{
+    width:14px;height:14px;border-radius:50%;background:#dbe1ea;color:#3a4354;
+    font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    font-family:'Geist Mono',monospace;flex-shrink:0;
+  }
+
+  .hint{text-align:center;font-size:10.5px;color:#c7cbd3;margin-top:14px;}
+
+  .bulk-bar{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%) translateY(140%);
+    background:#161923;
+    border-radius:13px;
+    padding:9px 10px 9px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    box-shadow:0 20px 40px -10px rgba(0,0,0,0.35), 0 8px 16px -6px rgba(0,0,0,0.25);
+    transition:transform .42s cubic-bezier(.22,.9,.32,1.2);
+    z-index:50;
+  }
+  .bulk-bar.show{ transform:translateX(-50%) translateY(0); }
+
+  .bulk-count{
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .bulk-count .num{
+    font-family:'Geist Mono',monospace;
+    background:#2563eb;
+    color:#fff;
+    border-radius:6px;
+    padding:1px 7px;
+    font-size:11px;
+    transition:transform .2s cubic-bezier(.34,1.7,.4,1);
+  }
+  .bulk-count .num.pulse{ animation:num-pulse .3s ease; }
+  @keyframes num-pulse{ 0%{transform:scale(1);} 40%{transform:scale(1.35);} 100%{transform:scale(1);} }
+
+  .bulk-divider{
+    width:1px;height:20px;
+    background:rgba(255,255,255,0.12);
+  }
+
+  .bulk-actions{display:flex;align-items:center;gap:3px;}
+  .bulk-btn{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    background:transparent;
+    border:none;
+    color:#c7cbd3;
+    font-family:'DM Sans',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    padding:7px 9px;
+    border-radius:8px;
+    cursor:default;
+    transition:background .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  .bulk-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .bulk-btn.flash{ background:rgba(255,255,255,0.14); color:#fff; }
+
+  .bulk-close{
+    width:26px;height:26px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,0.06);
+    color:#9096a3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:default;
+    flex-shrink:0;
+    transition:background .15s ease, color .15s ease;
+  }
+  .bulk-close svg{width:11px;height:11px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;}
+
+  .toast-confirm{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%) translateY(20px) scale(0.9);
+    background:#16a34a;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    padding:10px 16px;
+    border-radius:10px;
+    opacity:0;
+    pointer-events:none;
+    transition:transform .32s cubic-bezier(.34,1.6,.4,1), opacity .25s ease;
+    z-index:60;
+  }
+  .toast-confirm.show{
+    transform:translateX(-50%) translateY(0) scale(1);
+    opacity:1;
+  }
+
+  /* --- Simulated cursor --- */
+  .fake-cursor{
+    position:fixed;
+    width:20px;height:20px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:left .46s cubic-bezier(.4,.2,.2,1), top .46s cubic-bezier(.4,.2,.2,1), opacity .25s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3)); transition:transform .15s ease; }
+  .fake-cursor.pressed svg{ transform:scale(0.8); }
+
+  .cursor-ripple{
+    position:fixed;
+    width:10px;height:10px;
+    margin-left:-5px;margin-top:-5px;
+    border-radius:50%;
+    border:2px solid #2563eb;
+    pointer-events:none;
+    z-index:1999;
+    animation:cursor-ripple .55s ease-out forwards;
+  }
+  @keyframes cursor-ripple{
+    0%{ transform:scale(0.5); opacity:0.8; }
+    100%{ transform:scale(3.2); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="head">
+    <div class="head-title">All tasks</div>
+    <div class="head-sub">Animated preview</div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">Auto-plays on a loop</div>
+</div>
+
+<div class="bulk-bar" id="bulkBar">
+  <div class="bulk-count"><span class="num" id="bulkNum">0</span> selected</div>
+  <div class="bulk-divider"></div>
+  <div class="bulk-actions">
+    <button class="bulk-btn" id="assignBtn">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M18 8v5M15.5 10.5h5"/></svg>
+      Assign
+    </button>
+    <button class="bulk-btn" id="moveBtn">
+      <svg viewBox="0 0 24 24"><path d="M13 6l6 6-6 6M19 12H5"/></svg>
+      Move
+    </button>
+    <button class="bulk-btn danger" id="archiveBtn">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 13h4"/></svg>
+      Archive
+    </button>
+  </div>
+  <button class="bulk-close" id="clearBtn" aria-label="Clear selection">
+    <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg>
+  </button>
+</div>
+
+<div class="toast-confirm" id="toastConfirm">Archived</div>
+
+<script>
+const TASKS = [
+  {id:'TSK-142', title:'Set up OAuth provider config', prio:'high', init:'AR'},
+  {id:'TSK-138', title:'Write onboarding empty-state copy', prio:'low', init:'JM'},
+  {id:'TSK-151', title:'Audit color contrast on dark mode', prio:'med', init:'KP'},
+  {id:'TSK-133', title:'Pomodoro timer chime + haptics', prio:'med', init:'DL'},
+  {id:'TSK-129', title:'Kanban drag-and-drop for mobile touch', prio:'high', init:'AR'},
+  {id:'TSK-121', title:'Subtask checklist component', prio:'med', init:'JM'},
+];
+const prioLabel = {high:'High', med:'Med', low:'Low'};
+
+const grid = document.getElementById('grid');
+const bulkBar = document.getElementById('bulkBar');
+const bulkNum = document.getElementById('bulkNum');
+const toastConfirm = document.getElementById('toastConfirm');
+let selected = new Set();
+
+function render(){
+  grid.innerHTML = TASKS.map(t => `
+    <div class="task ${selected.has(t.id) ? 'selected' : ''}" data-id="${t.id}">
+      <div class="check-overlay"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L15 7"/></svg></div>
+      <div class="task-title">${t.title}</div>
+      <div class="task-meta">
+        <span class="badge ${t.prio}">${prioLabel[t.prio]}</span>
+        <span class="avatar mono">${t.init}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSelect(id){
+  if(selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  render();
+  updateBar();
+}
+
+function updateBar(){
+  const count = selected.size;
+  bulkNum.textContent = count;
+  bulkNum.classList.remove('pulse'); void bulkNum.offsetWidth; bulkNum.classList.add('pulse');
+  bulkBar.classList.toggle('show', count > 0);
+}
+
+function doBulkAction(label){
+  if(selected.size === 0) return;
+  const ids = Array.from(selected);
+  ids.forEach(id=>{
+    const el = grid.querySelector(`.task[data-id="${id}"]`);
+    if(el) el.classList.add('removing');
+  });
+  toastConfirm.textContent = `${label} ${ids.length} task${ids.length>1?'s':''}`;
+  toastConfirm.classList.add('show');
+  setTimeout(()=> toastConfirm.classList.remove('show'), 1600);
+
+  setTimeout(()=>{
+    ids.forEach(id=>{
+      const idx = TASKS.findIndex(t=>t.id===id);
+      if(idx>-1) TASKS.push(TASKS.splice(idx,1)[0]);
+    });
+    selected.clear();
+    render();
+    updateBar();
+  }, 320);
+}
+
+render();
+
+// ---- Simulated cursor helpers ----
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#1a1d27" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.4, TIP_Y = 2.6;
+function cursorTo(x,y){
+  fakeCursor.style.left = (x-TIP_X)+'px';
+  fakeCursor.style.top = (y-TIP_Y)+'px';
+}
+async function moveCursor(x,y){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x,y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  cursorTo(x,y);
+  await sleep(460);
+}
+function spawnRipple(x,y){
+  const r = document.createElement('div');
+  r.className = 'cursor-ripple';
+  r.style.left = x+'px';
+  r.style.top = y+'px';
+  document.body.appendChild(r);
+  setTimeout(()=> r.remove(), 600);
+}
+async function clickCursor(x,y){
+  await moveCursor(x,y);
+  fakeCursor.classList.add('pressed');
+  spawnRipple(x,y);
+  await sleep(150);
+  fakeCursor.classList.remove('pressed');
+  await sleep(120);
+}
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+
+// ---- Auto-play loop ----
+let autoRunning = false;
+async function autoLoop(){
+  if(autoRunning) return;
+  autoRunning = true;
+
+  await sleep(900);
+  const picks = [TASKS[0].id, TASKS[2].id, TASKS[4].id];
+  for(const id of picks){
+    const cardEl = grid.querySelector(`.task[data-id="${id}"]`);
+    const rect = cardEl.getBoundingClientRect();
+    await clickCursor(rect.left + rect.width/2, rect.top + rect.height/2);
+    toggleSelect(id);
+    await sleep(260);
+  }
+
+  await sleep(900);
+  const archiveBtn = document.getElementById('archiveBtn');
+  const aRect = archiveBtn.getBoundingClientRect();
+  await moveCursor(aRect.left + aRect.width/2, aRect.top + aRect.height/2);
+  archiveBtn.classList.add('flash');
+  await sleep(140);
+  doBulkAction('Archived');
+  await sleep(300);
+  archiveBtn.classList.remove('flash');
+
+  await sleep(2000);
+  hideCursorEl();
+  await sleep(500);
+  autoRunning = false;
+  autoLoop();
+}
+autoLoop();
+</script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wealth Multiplier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f9fafb;
+    --border:#e5e7eb;
+    --text-primary:#111827;
+    --text-secondary:#4b5563;
+    --accent:#064e3b;
+    --font-serif:'Cormorant Garamond', Georgia, serif;
+    --font-sans:'Work Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:var(--bg-alt);
+    padding:48px 20px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .panel{
+    width:420px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    padding:2rem;
+    text-align:center;
+  }
+
+  .section-title{
+    font-size:0.8rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--text-secondary);
+    margin-bottom:2px;
+  }
+  .chart-title{
+    font-family:var(--font-serif);
+    font-size:1.15rem;
+    font-weight:600;
+    color:var(--text-primary);
+    margin-bottom:1.6rem;
+  }
+
+  /* --- Valuation toggle pill --- */
+  .valuation-toggle{
+    position:relative;
+    /* two equal columns (as wide as the longer label) so the 50%-wide indicator covers exactly one button */
+    display:inline-grid;
+    grid-template-columns:1fr 1fr;
+    border:1px solid var(--border);
+    margin-bottom:2rem;
+  }
+  .valuation-btn{
+    text-align:center; /* labels wrap only when the panel is too narrow */
+    position:relative;
+    z-index:2;
+    padding:0.5rem 1rem;
+    font-family:var(--font-sans);
+    font-size:0.7rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--text-secondary);
+    background:transparent;
+    border:none;
+    transition:color .35s ease;
+  }
+  .valuation-btn.active{ color:#ffffff; }
+  .valuation-indicator{
+    position:absolute;
+    top:0; left:0;
+    width:50%; height:100%;
+    background:var(--accent);
+    z-index:1;
+    transition:transform .5s cubic-bezier(.65,0,.35,1);
+  }
+  .valuation-indicator.right{ transform:translateX(100%); }
+
+  /* --- Odometer --- */
+  .odometer-row{
+    display:flex;
+    justify-content:center;
+    align-items:baseline;
+    margin-bottom:1.6rem;
+  }
+  .digit-reel{
+    overflow:hidden;
+    height:52px;
+    width:30px;
+  }
+  .digit-strip{
+    display:flex;
+    flex-direction:column;
+    will-change:transform;
+  }
+  .digit-strip span{
+    height:52px;
+    line-height:52px;
+    font-family:var(--font-mono);
+    font-size:2.6rem;
+    font-weight:500;
+    color:var(--accent);
+    text-align:center;
+  }
+  .static-char{
+    height:52px;
+    line-height:52px;
+    font-family:var(--font-mono);
+    font-size:2.6rem;
+    font-weight:500;
+    color:var(--accent);
+    width:16px;
+    text-align:center;
+  }
+  .x-suffix{
+    font-family:var(--font-mono);
+    font-size:1.5rem;
+    font-weight:500;
+    color:var(--text-secondary);
+    margin-left:4px;
+    align-self:center;
+  }
+
+  /* --- Breakdown --- */
+  .breakdown{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding-top:1.4rem;
+    border-top:1px solid var(--border);
+  }
+  .breakdown-item{ text-align:center; }
+  .breakdown-label{
+    font-size:0.62rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    color:var(--text-secondary);
+    margin-bottom:4px;
+  }
+  .breakdown-val{
+    font-family:var(--font-mono);
+    font-size:0.85rem;
+    font-weight:500;
+    color:var(--text-primary);
+    transition:opacity .2s ease;
+  }
+  .breakdown-arrow{
+    color:var(--text-secondary);
+    font-size:0.9rem;
+    padding-bottom:2px;
+  }
+
+  /* --- Simulated cursor --- */
+  .fake-cursor{
+    position:fixed;
+    width:20px;height:20px;
+    pointer-events:none;
+    z-index:2000;
+    opacity:0;
+    transition:left .5s cubic-bezier(.4,.2,.2,1), top .5s cubic-bezier(.4,.2,.2,1), opacity .3s ease;
+  }
+  .fake-cursor.visible{ opacity:1; }
+  .fake-cursor svg{ display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3)); width:20px; height:20px; transition:transform .15s ease; }
+  .fake-cursor.pressed svg{ transform:scale(0.8); }
+
+  .cursor-ripple{
+    position:fixed;
+    width:10px;height:10px;
+    margin-left:-5px;margin-top:-5px;
+    border-radius:50%;
+    border:2px solid var(--accent);
+    pointer-events:none;
+    z-index:1999;
+    animation:cursor-ripple .55s ease-out forwards;
+  }
+  @keyframes cursor-ripple{
+    0%{ transform:scale(0.5); opacity:0.8; }
+    100%{ transform:scale(3.2); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="section-title">Terminal Value</div>
+  <div class="chart-title">Wealth Multiplier</div>
+
+  <div class="valuation-toggle" id="valToggle">
+    <div class="valuation-indicator" id="valIndicator"></div>
+    <button class="valuation-btn active" id="btnNominal">Nominal</button>
+    <button class="valuation-btn" id="btnReal">Real (Inflation-Adj.)</button>
+  </div>
+
+  <div class="odometer-row" id="odometerRow"></div>
+
+  <div class="breakdown">
+    <div class="breakdown-item">
+      <div class="breakdown-label">Invested</div>
+      <div class="breakdown-val" id="investedBreak">₹60,00,000</div>
+    </div>
+    <div class="breakdown-arrow">→</div>
+    <div class="breakdown-item">
+      <div class="breakdown-label">Final Corpus</div>
+      <div class="breakdown-val" id="corpusBreak">₹0</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+const INVESTED = 6000000;
+const SCENARIOS = {
+  nominal: { multiplier: 4.16, corpus: 24960000 },
+  real:    { multiplier: 1.30, corpus: 7786000 },
+};
+
+const odometerRow = document.getElementById('odometerRow');
+const DIGIT_HEIGHT = 52;
+
+// Build the odometer DOM for a fixed format "D.DD" (e.g. "4.16")
+function buildOdometer(){
+  odometerRow.innerHTML = '';
+  const layout = ['int', 'dot', 'dec1', 'dec2'];
+  const reels = {};
+  layout.forEach(key=>{
+    if(key === 'dot'){
+      const dot = document.createElement('div');
+      dot.className = 'static-char';
+      dot.textContent = '.';
+      odometerRow.appendChild(dot);
+    } else {
+      const reel = document.createElement('div');
+      reel.className = 'digit-reel';
+      const strip = document.createElement('div');
+      strip.className = 'digit-strip';
+      // repeat 0-9 three times so we can scroll through multiple loops
+      for(let loop=0; loop<4; loop++){
+        for(let d=0; d<10; d++){
+          const span = document.createElement('span');
+          span.textContent = d;
+          strip.appendChild(span);
+        }
+      }
+      reel.appendChild(strip);
+      odometerRow.appendChild(reel);
+      reels[key] = strip;
+    }
+  });
+  const xSuffix = document.createElement('div');
+  xSuffix.className = 'x-suffix';
+  xSuffix.textContent = 'x';
+  odometerRow.appendChild(xSuffix);
+  return reels;
+}
+
+const reels = buildOdometer();
+
+function setDigitInstant(strip, digit, loopIndex){
+  strip.style.transition = 'none';
+  strip.style.transform = `translateY(-${(loopIndex*10 + digit) * DIGIT_HEIGHT}px)`;
+}
+
+function animateDigit(strip, digit, loopIndex, duration, delay){
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      strip.style.transition = `transform ${duration}ms cubic-bezier(.16,.7,.24,1)`;
+      strip.style.transform = `translateY(-${(loopIndex*10 + digit) * DIGIT_HEIGHT}px)`;
+      setTimeout(resolve, duration);
+    }, delay);
+  });
+}
+
+function fmtMultiplier(m){
+  return m.toFixed(2).split('.'); // [int, dec]
+}
+function fmtINR(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+let currentLoopState = { int:0, dec1:0, dec2:0 };
+
+async function rollTo(multiplier){
+  const [intPart, decPart] = fmtMultiplier(multiplier);
+  const intDigit = parseInt(intPart, 10);
+  const dec1 = parseInt(decPart[0], 10);
+  const dec2 = parseInt(decPart[1], 10);
+
+  // Rightmost digit rolls fastest & starts first; leftmost rolls slowest & starts last —
+  // mimics a real odometer where the trailing digit spins while the leading one barely moves.
+  const p1 = animateDigit(reels.dec2, dec2, 2, 900, 0);
+  const p2 = animateDigit(reels.dec1, dec1, 1, 1050, 60);
+  const p3 = animateDigit(reels.int,  intDigit, 1, 1200, 120);
+  await Promise.all([p1,p2,p3]);
+
+  currentLoopState = { int: intDigit, dec1, dec2 };
+}
+
+function resetOdometer(){
+  setDigitInstant(reels.int, 0, 0);
+  setDigitInstant(reels.dec1, 0, 0);
+  setDigitInstant(reels.dec2, 0, 0);
+  currentLoopState = { int:0, dec1:0, dec2:0 };
+}
+
+// ---- Simulated cursor ----
+function createFakeCursor(){
+  const c = document.createElement('div');
+  c.className = 'fake-cursor';
+  c.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 3 L4 19 L8.3 15.2 L11 21 L13.6 19.9 L11 14.2 L17 14.2 Z" fill="#111827" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  document.body.appendChild(c);
+  return c;
+}
+const fakeCursor = createFakeCursor();
+const TIP_X = 3.4, TIP_Y = 2.6;
+function cursorTo(x,y){
+  fakeCursor.style.left = (x-TIP_X)+'px';
+  fakeCursor.style.top = (y-TIP_Y)+'px';
+}
+async function moveCursor(x,y){
+  if(!fakeCursor.classList.contains('visible')){
+    cursorTo(x,y);
+    fakeCursor.classList.add('visible');
+    await sleep(60);
+    return;
+  }
+  cursorTo(x,y);
+  await sleep(480);
+}
+function spawnRipple(x,y){
+  const r = document.createElement('div');
+  r.className = 'cursor-ripple';
+  r.style.left = x+'px';
+  r.style.top = y+'px';
+  document.body.appendChild(r);
+  setTimeout(()=> r.remove(), 600);
+}
+async function clickCursor(x,y){
+  await moveCursor(x,y);
+  fakeCursor.classList.add('pressed');
+  spawnRipple(x,y);
+  await sleep(150);
+  fakeCursor.classList.remove('pressed');
+  await sleep(120);
+}
+function hideCursorEl(){ fakeCursor.classList.remove('visible'); }
+
+// ---- Toggle + odometer wiring ----
+const btnNominal = document.getElementById('btnNominal');
+const btnReal = document.getElementById('btnReal');
+const valIndicator = document.getElementById('valIndicator');
+const corpusBreak = document.getElementById('corpusBreak');
+
+async function goTo(mode){
+  const s = SCENARIOS[mode];
+  if(mode === 'nominal'){
+    btnNominal.classList.add('active');
+    btnReal.classList.remove('active');
+    valIndicator.classList.remove('right');
+  } else {
+    btnReal.classList.add('active');
+    btnNominal.classList.remove('active');
+    valIndicator.classList.add('right');
+  }
+  corpusBreak.style.opacity = '0.35';
+  await rollTo(s.multiplier);
+  corpusBreak.textContent = fmtINR(s.corpus);
+  corpusBreak.style.opacity = '1';
+}
+
+async function runCycle(){
+  resetOdometer();
+  corpusBreak.textContent = '₹0';
+  await sleep(500);
+
+  await goTo('nominal');
+  await sleep(2400);
+
+  const realRect = btnReal.getBoundingClientRect();
+  await clickCursor(realRect.left + realRect.width/2, realRect.top + realRect.height/2);
+  await goTo('real');
+  await sleep(2600);
+
+  const nomRect = btnNominal.getBoundingClientRect();
+  await clickCursor(nomRect.left + nomRect.width/2, nomRect.top + nomRect.height/2);
+  await goTo('nominal');
+  await sleep(2000);
+
+  hideCursorEl();
+  await sleep(700);
+}
+
+async function loop(){
+  await runCycle();
+  loop();
+}
+loop();
+</script>
+</body>
+</html>

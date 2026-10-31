@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Empty State — All Caught Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'DM Sans', system-ui, sans-serif;
+    background:#f6f7f9;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 20px;
+  }
+
+  .stage{
+    width:380px;
+    max-width:100%;
+    text-align:center;
+  }
+
+  .scene-wrap{
+    position:relative;
+    height:230px;
+    margin-bottom:8px;
+  }
+
+  /* soft drifting background blobs */
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(2px);
+    opacity:0.55;
+  }
+  .blob.b1{
+    width:120px;height:120px;
+    background:#e4ebf7;
+    top:6px;left:14px;
+    animation:drift1 9s ease-in-out infinite;
+  }
+  .blob.b2{
+    width:80px;height:80px;
+    background:#eef0f3;
+    top:36px;right:22px;
+    animation:drift2 11s ease-in-out infinite;
+  }
+  .blob.b3{
+    width:56px;height:56px;
+    background:#e9edf5;
+    bottom:24px;left:36px;
+    animation:drift1 8s ease-in-out infinite reverse;
+  }
+  @keyframes drift1{
+    0%,100%{ transform:translate(0,0); }
+    50%{ transform:translate(10px,-8px); }
+  }
+  @keyframes drift2{
+    0%,100%{ transform:translate(0,0); }
+    50%{ transform:translate(-12px,10px); }
+  }
+
+  /* sparkles */
+  .sparkle{
+    position:absolute;
+    opacity:0;
+    animation:sparkle 3.6s ease-in-out infinite;
+  }
+  .sparkle svg{ width:100%; height:100%; }
+  .s1{ width:14px; height:14px; top:18px; right:70px; animation-delay:.2s; }
+  .s2{ width:10px; height:10px; top:80px; left:30px; animation-delay:1.6s; }
+  .s3{ width:12px; height:12px; bottom:52px; right:44px; animation-delay:2.6s; }
+  @keyframes sparkle{
+    0%{ opacity:0; transform:scale(0.4) rotate(0deg); }
+    30%{ opacity:1; transform:scale(1) rotate(20deg); }
+    60%{ opacity:1; transform:scale(0.9) rotate(-10deg); }
+    100%{ opacity:0; transform:scale(0.4) rotate(0deg); }
+  }
+
+  /* the floating character */
+  .character{
+    position:absolute;
+    left:50%;
+    top:18px;
+    transform:translateX(-50%);
+    width:150px;
+    animation:float 3.6s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(-12px); }
+  }
+
+  .shadow{
+    position:absolute;
+    bottom:14px;
+    left:50%;
+    width:96px;
+    height:14px;
+    background:#d7dce4;
+    border-radius:50%;
+    transform:translateX(-50%);
+    animation:shadow-squish 3.6s ease-in-out infinite;
+    filter:blur(1px);
+  }
+  @keyframes shadow-squish{
+    0%,100%{ transform:translateX(-50%) scale(1); opacity:0.55; }
+    50%{ transform:translateX(-50%) scale(0.8); opacity:0.35; }
+  }
+
+  .eye{
+    animation:blink 4.4s ease-in-out infinite;
+    transform-origin:center;
+  }
+  .eye.right{ animation-delay:0s; }
+  @keyframes blink{
+    0%, 92%, 100%{ transform:scaleY(1); }
+    95%{ transform:scaleY(0.1); }
+  }
+
+  .flag{
+    transform-origin:70px 60px;
+    animation:wave 2.4s ease-in-out infinite;
+  }
+  @keyframes wave{
+    0%,100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(6deg); }
+  }
+
+  .text-block{
+    opacity:0;
+    animation:fade-up .6s ease-out .3s forwards;
+  }
+  @keyframes fade-up{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .title{
+    font-size:15px;
+    font-weight:700;
+    color:#1f2937;
+    margin-bottom:5px;
+  }
+  .subtitle{
+    font-size:12px;
+    color:#9096a3;
+    font-weight:500;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="scene-wrap">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+
+    <div class="sparkle s1">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" fill="#c7d1e0"/></svg>
+    </div>
+    <div class="sparkle s2">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" fill="#93c5fd"/></svg>
+    </div>
+    <div class="sparkle s3">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" fill="#c7d1e0"/></svg>
+    </div>
+
+    <div class="shadow"></div>
+
+    <div class="character">
+      <svg viewBox="0 0 150 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- legs -->
+        <ellipse cx="58" cy="150" rx="14" ry="9" fill="#dbe1ea"/>
+        <ellipse cx="92" cy="150" rx="14" ry="9" fill="#dbe1ea"/>
+
+        <!-- body (clipboard-blob) -->
+        <rect x="30" y="42" width="90" height="104" rx="26" fill="#eef2f8" stroke="#cdd6e4" stroke-width="2"/>
+
+        <!-- clip -->
+        <rect x="60" y="30" width="30" height="18" rx="7" fill="#c7d1e0"/>
+        <rect x="66" y="24" width="18" height="14" rx="6" fill="#eef2f8" stroke="#cdd6e4" stroke-width="2"/>
+
+        <!-- cheeks -->
+        <ellipse cx="50" cy="94" rx="6" ry="4" fill="#fddcd0" opacity="0.7"/>
+        <ellipse cx="100" cy="94" rx="6" ry="4" fill="#fddcd0" opacity="0.7"/>
+
+        <!-- eyes -->
+        <g class="eye left">
+          <circle cx="60" cy="82" r="5" fill="#374151"/>
+        </g>
+        <g class="eye right">
+          <circle cx="90" cy="82" r="5" fill="#374151"/>
+        </g>
+
+        <!-- smile -->
+        <path d="M62 98 Q75 110 88 98" stroke="#374151" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+        <!-- lines suggesting a checklist, faint -->
+        <rect x="46" y="120" width="34" height="4" rx="2" fill="#dbe1ea"/>
+        <rect x="46" y="130" width="22" height="4" rx="2" fill="#dbe1ea"/>
+
+        <!-- arm holding flag -->
+        <path d="M112 90 Q126 84 128 66" stroke="#eef2f8" stroke-width="12" stroke-linecap="round"/>
+        <path d="M112 90 Q126 84 128 66" stroke="#cdd6e4" stroke-width="12" stroke-linecap="round" opacity="0.001"/>
+
+        <g class="flag">
+          <line x1="128" y1="66" x2="128" y2="26" stroke="#c7d1e0" stroke-width="3" stroke-linecap="round"/>
+          <path d="M128 27 L152 33 L128 43 Z" fill="#2563eb"/>
+          <path d="M136 30.5 L140.5 35 L148 28" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </g>
+
+        <!-- other arm resting -->
+        <path d="M38 92 Q26 98 28 112" stroke="#eef2f8" stroke-width="12" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="text-block">
+    <div class="title">No tasks — you're all caught up</div>
+    <div class="subtitle">Enjoy the calm before the next sprint.</div>
+  </div>
+</div>
+
+</body>
+</html>

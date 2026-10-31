@@ -1,0 +1,40 @@
+import React from 'react'
+import { projects } from '@/helpers/constants'
+import ProjectCard from './ProjectCard.tsx/ProjectCard'
+import RingButton from './RingButton'
+import Link from 'next/link'
+
+const ProjectsSection = () => {
+  return (
+    <div>
+      <div className='px-[3%] py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
+        {projects.slice(0, 3).map((project) => (
+          <ProjectCard
+            key={project.id}
+            image={project.image}
+            video={project.video}
+            title={project.name}
+            description={project.description}
+            liveLink={project.link}
+            githubLink={project.github}
+            status={project.status}
+            projectBg={project.projectBg || ""}
+            tech={project.tech}
+            badge={project.badge}
+            restricted={project.restricted}
+            animations={project.animations}
+          />
+        ))}
+      </div>
+      {projects.length > 3 && (
+        <div className="px-[4%] flex justify-center pb-6">
+          <Link href="/projectspage">
+            <RingButton text="View All Projects" size="lg" />
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ProjectsSection

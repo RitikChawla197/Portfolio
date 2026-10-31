@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Toast Notifications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'DM Sans', system-ui, sans-serif;
+    background:#f2f3f6;
+    min-height:100vh;
+    padding:24px;
+    position:relative;
+  }
+  .mono{font-family:'Geist Mono', monospace;}
+
+  .backdrop{
+    max-width:640px;
+    margin:0 auto;
+  }
+  .header{
+    margin-bottom:14px;
+  }
+  .title{font-size:15px;font-weight:800;color:#0b0e14;letter-spacing:-0.01em;margin-bottom:3px;}
+  .sub{font-size:11px;color:#6b7280;}
+
+  .controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .ctrl-btn{
+    font-family:'DM Sans',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    border-radius:7px;
+    padding:7px 12px;
+    border:1px solid #dfe2e8;
+    background:#fff;
+    color:#0b0e14;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .ctrl-btn:hover{background:#eceef2;}
+  .ctrl-btn:active{transform:scale(0.96);}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+  /* --- Toast stack --- */
+  .toast-stack{
+    position:fixed;
+    top:20px;
+    right:20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:999;
+    width:300px;
+  }
+
+  .toast{
+    background:#fff;
+    border:1px solid #e7e9ee;
+    border-radius:11px;
+    box-shadow:0 10px 24px -6px rgba(16,24,40,0.14), 0 4px 8px -4px rgba(16,24,40,0.08);
+    padding:12px 12px 0;
+    overflow:hidden;
+    transform:translateX(360px);
+    opacity:0;
+    transition:transform .45s cubic-bezier(.22,.9,.32,1.15), opacity .35s ease, margin-top .3s ease, max-height .3s ease;
+  }
+  .toast.enter{
+    transform:translateX(0);
+    opacity:1;
+  }
+  .toast.leave{
+    transform:translateX(360px) scale(0.96);
+    opacity:0;
+  }
+
+  .toast-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding-bottom:11px;
+  }
+
+  .icon-wrap{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    margin-top:1px;
+  }
+  .icon-wrap svg{width:14px;height:14px;}
+
+  .icon-wrap.success{background:#dcfce7;color:#16a34a;}
+  .icon-wrap.assigned{background:#dbeafe;color:#2563eb;}
+  .icon-wrap.blocked{background:#fee2e2;color:#ef4444;}
+
+  .check-path{
+    stroke-dasharray:20;
+    stroke-dashoffset:20;
+  }
+  .toast.enter .check-path{
+    animation:draw-check .38s ease-out .18s forwards;
+  }
+  @keyframes draw-check{ to{ stroke-dashoffset:0; } }
+
+  .bell-icon{
+    transform-origin:50% 15%;
+  }
+  .toast.enter .bell-icon{
+    animation:bell-ring .5s ease-out .2s;
+  }
+  @keyframes bell-ring{
+    0%,100%{ transform:rotate(0deg); }
+    20%{ transform:rotate(14deg); }
+    40%{ transform:rotate(-12deg); }
+    60%{ transform:rotate(7deg); }
+    80%{ transform:rotate(-4deg); }
+  }
+
+  .toast-body{flex:1;min-width:0;}
+  .toast-title{font-size:12.5px;font-weight:700;color:#0b0e14;margin-bottom:2px;}
+  .toast-msg{font-size:11.5px;color:#6b7280;line-height:1.35;}
+  .toast-msg .tag{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;
+    color:#9096a3;
+    background:#f2f3f6;
+    padding:1px 5px;
+    border-radius:4px;
+  }
+
+  .close-btn{
+    width:18px;height:18px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    color:#c7cbd3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background .15s ease, color .15s ease;
+  }
+  .close-btn:hover{background:#f2f3f6;color:#6b7280;}
+  .close-btn svg{width:11px;height:11px;}
+
+  .progress-track{
+    height:2.5px;
+    background:#f2f3f6;
+    margin:0 -12px;
+  }
+  .progress-fill{
+    height:100%;
+    width:100%;
+    transform-origin:left;
+    transition:transform linear;
+  }
+  .progress-fill.success{background:#16a34a;}
+  .progress-fill.assigned{background:#2563eb;}
+  .progress-fill.blocked{background:#ef4444;}
+</style>
+</head>
+<body>
+
+<div class="backdrop">
+  <div class="header">
+    <div class="title">Notifications</div>
+    <div class="sub">Animated preview — auto-plays on a loop</div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+const ICONS = {
+  success: `<svg viewBox="0 0 24 24" fill="none"><path class="check-path" d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  assigned: `<svg class="bell-icon" viewBox="0 0 24 24" fill="none"><path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 002 2z" fill="currentColor"/><path d="M18 16v-5a6 6 0 10-12 0v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>`,
+  blocked: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/><path d="M8 12h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+};
+
+const CONTENT = {
+  success: {title:'Task completed', msg: t => `<span class="tag">${t.id}</span> ${t.text}`},
+  assigned: {title:'Assigned to you', msg: t => `${t.text} — <span class="tag">${t.id}</span>`},
+  blocked: {title:'Task blocked', msg: t => `${t.text} needs <span class="tag">${t.id}</span> resolved first`},
+};
+
+const SAMPLE = {
+  success: {id:'TSK-121', text:'Subtask checklist component'},
+  assigned: {id:'TSK-151', text:'Audit color contrast on dark mode'},
+  blocked: {id:'TSK-133', text:'Pomodoro timer chime'},
+};
+
+const DURATION = 4200;
+const stack = document.getElementById('toastStack');
+let toastCount = 0;
+
+function spawnToast(type){
+  const sample = SAMPLE[type];
+  const content = CONTENT[type];
+  const id = 'toast-' + (toastCount++);
+
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.id = id;
+  el.innerHTML = `
+    <div class="toast-row">
+      <div class="icon-wrap ${type}">${ICONS[type]}</div>
+      <div class="toast-body">
+        <div class="toast-title">${content.title}</div>
+        <div class="toast-msg">${content.msg(sample)}</div>
+      </div>
+    </div>
+    <div class="progress-track"><div class="progress-fill ${type}"></div></div>
+  `;
+
+  stack.insertBefore(el, stack.firstChild);
+
+  requestAnimationFrame(()=>{
+    el.classList.add('enter');
+    const fill = el.querySelector('.progress-fill');
+    requestAnimationFrame(()=>{
+      fill.style.transition = `transform ${DURATION}ms linear`;
+      fill.style.transform = 'scaleX(0)';
+    });
+  });
+
+  setTimeout(()=> dismiss(el), DURATION);
+}
+
+function dismiss(el){
+  if(!el || el.classList.contains('leave')) return;
+  el.classList.remove('enter');
+  el.classList.add('leave');
+  el.style.maxHeight = el.offsetHeight + 'px';
+  requestAnimationFrame(()=>{
+    el.style.maxHeight = '0px';
+    el.style.paddingTop = '0px';
+    el.style.marginBottom = '-10px';
+  });
+  setTimeout(()=> el.remove(), 420);
+}
+
+// ---- Auto-play loop ----
+const sequence = ['success', 'assigned', 'blocked'];
+let seqIndex = 0;
+function autoLoop(){
+  spawnToast(sequence[seqIndex % sequence.length]);
+  seqIndex++;
+  setTimeout(autoLoop, 2600);
+}
+autoLoop();
+</script>
+</body>
+</html>
