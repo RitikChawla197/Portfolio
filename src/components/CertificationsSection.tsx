@@ -1,5 +1,6 @@
 import React from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Award } from "lucide-react";
+import localCertifications from "@/data/certifications.json";
 
 const ClaudeIcon = () => (
   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" aria-label="Claude">
@@ -27,39 +28,60 @@ const GoogleIcon = () => (
   </svg>
 );
 
+type IconKey = "claude" | "google";
+
 type Cert = {
   title: string;
   issuer: string;
   date: string;
   href: string;
-  icon: React.ReactNode;
+  icon?: IconKey | string;
 };
 
-const certifications: Cert[] = [
-  {
-    title: "Claude Academy: Claude 101",
-    issuer: "Anthropic",
-    date: "Oct 2026",
-    href: "https://academy.claude.com/verify/122a2b04ac3fd7d3089c9fd9245809d9",
-    icon: <ClaudeIcon />,
-  },
-  {
-    title: "Claude Academy: AI Fluency — Framework and Foundations",
-    issuer: "Anthropic",
-    date: "Oct 2026",
-    href: "https://academy.claude.com/verify/c0c40e906126a308bc5362c329e6603f",
-    icon: <ClaudeIcon />,
-  },
-  {
-    title: "Introduction to Generative AI Studio",
-    issuer: "Google Cloud · Simplilearn SkillUp",
-    date: "Oct 2025",
-    href: "https://simpli-web.app.link/e/J64UkdG1GXb",
-    icon: <GoogleIcon />,
-  },
-];
+const icons: Record<IconKey, React.ReactNode> = {
+  claude: <ClaudeIcon />,
+  google: <GoogleIcon />,
+};
 
-const CertificationsSection = () => {
+// Raw URL of the Gist that holds the list, e.g.
+// https://gist.githubusercontent.com/<user>/<gist-id>/raw/certifications.json
+// (no commit hash in the URL, so it always serves the latest revision)
+const CERTIFICATIONS_URL = process.env.CERTIFICATIONS_URL;
+// how often (seconds) the site re-reads the Gist
+const REVALIDATE = 3600;
+
+const isCert = (value: unknown): value is Cert => {
+  if (!value || typeof value !== "object") return false;
+  const c = value as Record<string, unknown>;
+  return (
+    ["title", "issuer", "date", "href"].every((key) => typeof c[key] === "string") &&
+    // the list comes from outside the repo, so only allow real links (no javascript: URLs)
+    (c.href as string).startsWith("https://")
+  );
+};
+
+// the Gist is the source of truth; the bundled JSON keeps the section filled if it's unset or unreachable
+async function getCertifications(): Promise<Cert[]> {
+  if (!CERTIFICATIONS_URL) return localCertifications as Cert[];
+  try {
+    const res = await fetch(CERTIFICATIONS_URL, { next: { revalidate: REVALIDATE } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: unknown = await res.json();
+    if (!Array.isArray(data)) throw new Error("expected a JSON array");
+    const certs = data.filter(isCert);
+    return certs.length ? certs : (localCertifications as Cert[]);
+  } catch (err) {
+    console.error("Failed to load certifications from Gist:", err);
+    return localCertifications as Cert[];
+  }
+}
+
+const CertIcon = ({ cert }: { cert: Cert }) =>
+  icons[cert.icon as IconKey] ?? <Award className="h-6 w-6 text-white/70" aria-label={cert.issuer} />;
+
+const CertificationsSection = async () => {
+  const certifications = await getCertifications();
+
   return (
     <div className="flex flex-col gap-4 px-4 py-10 md:px-[3%]">
       {certifications.map((c) => (
@@ -73,7 +95,7 @@ const CertificationsSection = () => {
           <div className="relative h-10 w-10 shrink-0 md:h-12 md:w-12">
             <span className="absolute -inset-[2px] rounded-[14px] border border-white/20" />
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[12px] border border-white/10 bg-white/5">
-              {c.icon}
+              <CertIcon cert={c} />
             </div>
           </div>
 
