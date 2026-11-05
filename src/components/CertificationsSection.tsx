@@ -28,7 +28,13 @@ const GoogleIcon = () => (
   </svg>
 );
 
-type IconKey = "claude" | "google";
+const HelsinkiIcon = () => (
+  <svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" role="img" aria-label="University of Helsinki">
+    <path fill="#ffffff" d="M452 0h96v97h-96V0zm0 903h96v97h-96v-97zm380-358q-32-20-38-74-25 3-44-3-28-10-40-42-6-13-12-47t-13-52q-12-32-33-56-33-35-74-50-37-14-78-11 30 19 37 46 6 23-7 41t-36 19-42-12q-8-5-35-27-22-18-40-26-26-12-58-12-25 0-51 13 24 3 40 16 13 12 24 32 3 7 16 39 10 23 27 36t44 22q-13 6-38 6-29 0-55-15-20-11-45-36t-43-36q-28-16-61-16-16 0-29 4t-19 9q23 3 42 14 23 15 23 34 0 11-7 17t-19 5-23-12q-18-20-43-33t-54-12q-13 0-26 3T0 339q34 5 58 28t45 72q15 35 33 51 24 23 64 23 5 0 29-3 20-2 31 0 17 2 27 13 9 8 12 21 2 6 5 23 2 15 6 23 10 21 28 31 21 11 56 11-19 19-54 21-32 2-65-9t-49-28q2 46 25 80 25 37 68 50 49 14 113-4 18-5 30-1t19 24q16 41 71 35 48-5 79 6t59 42q8-81-77-135-15-9-23-19-6-8-9-19l-4-17q16 18 38 28 17 8 43 14 82 10 110 52 2-23-6-42-6-15-19-29-10-10-26-22-19-15-23-18-11-10-13-18 19 12 36 17t38 5q7-1 27-6t31-4q16 0 28 7 15 9 27 29 29-18 68-15 35 3 64 21-12-30-34-52-17-18-44-33-12-7-47-23-28-14-43-24zm-284 36h-96v-97h96v97z" />
+  </svg>
+);
+
+type IconKey = "claude" | "google" | "helsinki";
 
 type Cert = {
   title: string;
@@ -41,6 +47,7 @@ type Cert = {
 const icons: Record<IconKey, React.ReactNode> = {
   claude: <ClaudeIcon />,
   google: <GoogleIcon />,
+  helsinki: <HelsinkiIcon />,
 };
 
 // Raw URL of the Gist that holds the list, e.g.
@@ -76,8 +83,15 @@ async function getCertifications(): Promise<Cert[]> {
   }
 }
 
-const CertIcon = ({ cert }: { cert: Cert }) =>
-  icons[cert.icon as IconKey] ?? <Award className="h-6 w-6 text-white/70" aria-label={cert.issuer} />;
+// `icon` is either a built-in key above or an https:// image URL (any issuer's logo, set from the Gist)
+const CertIcon = ({ cert }: { cert: Cert }) => {
+  if (cert.icon && Object.hasOwn(icons, cert.icon)) return icons[cert.icon as IconKey];
+  if (cert.icon?.startsWith("https://")) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={cert.icon} alt={cert.issuer} className="h-6 w-6 object-contain" loading="lazy" />;
+  }
+  return <Award className="h-6 w-6 text-white/70" aria-label={cert.issuer} />;
+};
 
 const CertificationsSection = async () => {
   const certifications = await getCertifications();
