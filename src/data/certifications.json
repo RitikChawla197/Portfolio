@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Claude Academy: Claude 101",
+    "issuer": "Anthropic",
+    "date": "Oct 2026",
+    "href": "https://academy.claude.com/verify/122a2b04ac3fd7d3089c9fd9245809d9",
+    "icon": "claude"
+  },
+  {
+    "title": "Claude Academy: AI Fluency — Framework and Foundations",
+    "issuer": "Anthropic",
+    "date": "Oct 2026",
+    "href": "https://academy.claude.com/verify/c0c40e906126a308bc5362c329e6603f",
+    "icon": "claude"
+  },
+  {
+    "title": "Introduction to Generative AI Studio",
+    "issuer": "Google Cloud · Simplilearn SkillUp",
+    "date": "Oct 2025",
+    "href": "https://simpli-web.app.link/e/J64UkdG1GXb",
+    "icon": "google"
+  }
+]
